@@ -1,9 +1,9 @@
 from django import forms
-from .models import Virus
+from .models import CsvData
 
-class VirusForm(forms.ModelForm):
+class CsvDataForm(forms.ModelForm):
     class Meta:
-        model = Virus
+        model = CsvData
         fields = "__all__"
 
 

@@ -1,107 +1,111 @@
+import re
+from datetime import datetime
+
 from bs4 import BeautifulSoup
 import requests
-import re
 
 
 class Parser:
-
-    data_start = []
-    data_end = []
-    url_list = []
-    dictionary_list = []
-    dictionary = {}
+    _url_base = "https://xn--90aivcdt6dxbc.xn--p1ai/{}"
+    _url_articles_list = _url_base.format('stopkoronavirus/')
+    _subject_fields = ['hospitalized', 'recovered', 'cases', 'deaths']
+    _date_format = '%d.%m.%Y'
 
     def __init__(self):
+        self.url_list = self._get_url_list()
 
-        self.set_url_list("https://xn--90aivcdt6dxbc.xn--p1ai/stopkoronavirus/")
-        td = self.parser_url_list()
+    @classmethod
+    def _get_url_list(cls):
+        urls = []
+        req = requests.get(cls._url_articles_list)
 
-    def parser_url_list(self):
-
-        for i in range(len(self.url_list)):
-            url_domen = "https://xn--90aivcdt6dxbc.xn--p1ai/"
-            req = requests.get(url_domen + self.url_list[i])
-            src = req.text
-            soup = BeautifulSoup(src, 'lxml')
-            detail__body = soup.find("div", class_="article-detail__body")
-            tbody = detail__body.find("tbody")
-            td = tbody.find_all("td")
-
-            self.set_data(detail__body)
-            td = self.clearing(td)
-            self.set_dict(td)
-
-    def set_url_list(self, url):
-
-        req = requests.get(url)
         src = req.text
         soup = BeautifulSoup(src, 'lxml')
+
         media_page = soup.find("body")
         material_cards = media_page.find_all("a", class_="u-material-card u-material-cards__card")
 
         for link in material_cards:
-            self.url_list.append(str(link.get('href')))
+            href = str(link.get('href'))
+            if "v-rossii-za-nedelyu-vyzdorovelo-" in href:
+                urls.append(href)
 
-        for elem in self.url_list:
-            if elem.find("v-rossii-za-nedelyu-vyzdorovelo-") == -1:
-                self.url_list.remove(elem)
+        return urls
 
-    def clearing(self, td):
+    @classmethod
+    def _parse_url_list(cls, url_list):
+        parsed_data = []
 
-        for i in range(len(td)):
-            td[i] = str(td[i])
+        for url in url_list:
+            req = requests.get(cls._url_base.format(url))
 
-        for i in range(len(td)):
-            td[i] = re.sub('<.*?>', '', td[i])
-            td[i] = re.sub('\\n', '', td[i])
-            td[i] = re.sub('\\t', '', td[i])
-            td[i] = re.sub('\\r', '', td[i])
-        return td
+            parsed_data.append(cls._parse_page(req.text))
 
-    def set_dict(self, td):
+        return parsed_data
 
-        hospitalized = td[1]
-        recovered = td[2]
-        revealed = td[3]
-        died = td[4]
-        self.dictionary = {}
-        for i in range(5, len(td), 5):
-            self.dictionary[td[i]] = {hospitalized: td[i + 1], recovered: td[i + 2], revealed: td[i + 3], died: td[i + 4]}
+    @classmethod
+    def _parse_page(cls, src):
+        soup = BeautifulSoup(src, 'lxml')
 
-        self.dictionary_list.append(self.dictionary)
+        detail__body = soup.find("div", class_="article-detail__body")
+        tbody = detail__body.find("tbody")
+        table_data = tbody.find_all("td")
 
-    def set_data(self, detail__body):
+        dates = cls._get_dates(detail__body)
+
+        table_data = cls._clean_table_data(table_data)
+        subjects_dict = cls._get_subjects_dict(table_data)
+
+        return *dates, subjects_dict
+
+    @classmethod
+    def _get_dates(cls, detail__body):
 
         data = str(detail__body.find("h3"))
         data = re.sub('<.*?>', '', data)
         matches = re.findall(r"\d+\.?\d*- \d+\.?\d*", data)
         dates = matches[0].split('-')
-        self.data_start.append(dates[0])
-        self.data_end.append(dates[1])
 
-    def get_summary_all(self):
-        return [(x, y, z) for x, y, z in zip(self.data_start, self.data_end, self.dictionary_list)]
+        current_year = datetime.now().year
+        if int(dates[0].split('.')[1]) > int(dates[1].split('.')[1]):
+            dates[0] = datetime.strptime(dates[0].strip() + f'.{current_year - 1}', cls._date_format)
+            dates[1] = datetime.strptime(dates[1].strip() + f'.{current_year}', cls._date_format)
+        else:
+            dates[0] = datetime.strptime(dates[0].strip() + f'.{current_year}', cls._date_format)
+            dates[1] = datetime.strptime(dates[1].strip() + f'.{current_year}', cls._date_format)
 
-    def get_summary_past(self):
-         return self.data_start[0], self.data_end[0], self.dictionary_list[0]
+        return dates
 
-    def __getattr__(self, dictionary_list):
-        return self.dictionary_list
+    @staticmethod
+    def _clean_table_data(table_data):
+        table_data = table_data[5:]
 
-    def __getattr__(self, url_list):
-        return self.url_list
+        for i, td in enumerate(table_data):
+            table_data[i] = re.sub('<.*?>|[\\n\\t\\r]', '', str(td))
 
-    def __getattr__(self, data_start):
-        return self.data_start
+            temp = table_data[i].replace(' ', '')
+            if temp.isdecimal():
+                table_data[i] = int(temp)
 
-    def __getattr__(self, data_end):
-        return self.data_end
+        return table_data
+
+    @classmethod
+    def _get_subjects_dict(cls, tds):
+        dictionary = {}
+        for i in range(0, len(tds), 5):
+            dictionary[tds[i]] = dict(zip(cls._subject_fields, tds[i + 1:i + 5]))
+
+        return dictionary
+
+    def get_all(self):
+        return self._parse_url_list(self.url_list)
+
+    def get_latest(self):
+        return self._parse_url_list(self.url_list[:1])
 
 
 if __name__ == '__main__':
-
     a = Parser()
-    print(*a.get_summary_all(), sep="\n")
-    print(a.get_summary_past())
-
+    print(*a.get_all(), sep="\n")
+    print(*a.get_latest())
 

@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 ('date', models.DateField()),
                 ('cases', models.IntegerField(default=True)),
                 ('deaths', models.IntegerField(default=True)),
-                ('cases_per_100000', models.FloatField(blank=True, default=True, null=True)),
+                ('days_14_cases_per_100000', models.FloatField(blank=True, default=True, null=True)),
             ],
         ),
     ]

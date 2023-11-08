@@ -1,6 +1,6 @@
 from django.db import models
 
-class Model(models.Model):
+class ExternalVaccination(models.Model):
     date = models.DateField()
     total_vaccinations = models.BigIntegerField()
     people_vaccinated = models.BigIntegerField()
@@ -15,6 +15,14 @@ class Model(models.Model):
     daily_vaccinations_per_million = models.BigIntegerField()
     daily_people_vaccinated = models.BigIntegerField()
     daily_people_vaccinated_per_hundred = models.FloatField()
+ 
+
+    def __str__(self):
+        return f"{self.date}"
+
+class ExternalStatisctic(models.Model):
+
+    date = models.DateField()
     region = models.CharField(max_length=255)
     infection = models.BigIntegerField()
     recovery = models.BigIntegerField()
@@ -22,6 +30,8 @@ class Model(models.Model):
     death_per_day = models.IntegerField()
     infection_per_day = models.IntegerField()
     recovery_per_day = models.IntegerField()
-
+    
     def __str__(self):
         return f"{self.date} - {self.region}"
+    
+    

@@ -7,7 +7,6 @@ RUN addgroup --system app && adduser --system --group app
 
 ENV HOME=/home/app
 ENV APP_DIR=/home/app/web
-RUN mkdir APP_DIR
 WORKDIR $APP_DIR
 
 COPY requirements.txt .

@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class ExternalVaccination(models.Model):
     date = models.DateField()
     total_vaccinations = models.BigIntegerField()
@@ -15,13 +16,12 @@ class ExternalVaccination(models.Model):
     daily_vaccinations_per_million = models.BigIntegerField()
     daily_people_vaccinated = models.BigIntegerField()
     daily_people_vaccinated_per_hundred = models.FloatField()
- 
 
     def __str__(self):
         return f"{self.date}"
 
-class ExternalStatisctic(models.Model):
 
+class ExternalStatisctic(models.Model):
     date = models.DateField()
     region = models.CharField(max_length=255)
     infection = models.BigIntegerField()
@@ -30,8 +30,29 @@ class ExternalStatisctic(models.Model):
     death_per_day = models.IntegerField()
     infection_per_day = models.IntegerField()
     recovery_per_day = models.IntegerField()
-    
+
     def __str__(self):
         return f"{self.date} - {self.region}"
-    
-    
+
+
+class CsvData(models.Model):
+    date = models.DateField(auto_now=False)
+    cases = models.IntegerField(default=True)
+    deaths = models.IntegerField(default=True)
+    days_14_cases_per_100000 = models.FloatField(default=True, null=True, blank=True)
+
+
+class StopCoronaData(models.Model):
+    start_date = models.DateField()
+    end_date = models.DateField()
+    region = models.CharField(max_length=255)
+    hospitalized = models.IntegerField()
+    infected = models.IntegerField()
+    recovered = models.IntegerField()
+    deaths = models.IntegerField()
+
+    class Meta:
+        unique_together = ('start_date', 'end_date', 'region')
+
+    def __str__(self):
+        return f"{self.region}: {self.start_date} - {self.end_date}"

@@ -7,7 +7,6 @@ RUN addgroup --system app && adduser --system --group app
 
 ENV HOME=/home/app
 ENV APP_DIR=/home/app/web
-RUN mkdir $APP_DIR
 WORKDIR $APP_DIR
 
 #Установка зависимостей Python
@@ -23,11 +22,12 @@ RUN chmod +x $APP_DIR/entrypoint.sh
 COPY . $APP_DIR
 
 RUN chown -R app:app $APP_DIR
+RUN chmod +x $APP_DIR/entrypoint.sh
 
 USER app
 
 #Ожидание подключения к postgres
-ENTRYPOINT ["$APP_DIR/entrypoint.sh"]
+ENTRYPOINT ["/home/app/web/entrypoint.sh"]
 
 
 

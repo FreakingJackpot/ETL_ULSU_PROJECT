@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 import requests
 
 
-class Parser:
+class StopCoronaParser:
     _url_base = settings.STOPCORONA_URL_BASE
     _url_articles_page = settings.STOPCORONA_URL_ARTICLES_PAGE
     _max_page = settings.MAX_STOPCORONA_PAGE
@@ -96,7 +96,7 @@ class Parser:
         table_data = table_data[5:]
 
         for i, td in enumerate(table_data):
-            table_data[i] = re.sub('<.*?>|[\\n\\t\\r]', '', str(td)).strip()
+            table_data[i] = re.sub('\\n\\t\\r', '', td.text).strip()
 
             temp = table_data[i].replace(' ', '')
             if temp.isdecimal():

@@ -1,9 +1,7 @@
-import csv
-
 from django.core.management.base import BaseCommand
 from django.db import DatabaseError
 
-from etl.utils.parsers.stopcorona_parser import Parser
+from etl.utils.parsers.stopcorona_parser import StopCoronaParser
 from etl.models import StopCoronaData
 
 
@@ -24,7 +22,7 @@ class Command(BaseCommand):
         self.upload_to_db(parsed_data)
 
     def get_parsed_data(self):
-        parser = Parser()
+        parser = StopCoronaParser()
 
         if self.all:
             return parser.get_all()

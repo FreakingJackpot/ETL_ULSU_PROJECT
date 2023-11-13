@@ -71,8 +71,7 @@ class StopCoronaParser:
 
     @classmethod
     def _get_dates(cls, detail__body):
-        data = str(detail__body.find("h3"))
-        data = re.sub('<.*?>', '', data)
+        data = detail__body.find("h3").text
         matches = re.findall(r"\d+\.?\d*\.? - \d+\.?\d*|\d+\.?\d*- \d+\.?\d*", data)
         dates = matches[0].split('-')
 

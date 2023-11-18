@@ -1,12 +1,11 @@
 import csv
-
 from django.core.management.base import BaseCommand
 
 from etl.forms import CsvDataForm
 
-
 class Command(BaseCommand):
-    help = ("HELP")
+
+    help = 'Загрузка данных из CSV в PostgreSQL'
 
     def add_arguments(self, parser):
         parser.add_argument("file_path", nargs=1, type=str)
@@ -22,8 +21,6 @@ class Command(BaseCommand):
         self.skipped_counter = 0
 
     def process_csv_data_to_db_model(self):
-        self.stdout.write("Import COVID")
-
         with open(self.file_path, mode="r") as f:
             reader = csv.DictReader(f)
             for index, row_dict in enumerate(reader):

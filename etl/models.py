@@ -1,7 +1,7 @@
 from django.db import models
 
 
-class ExternalVaccination(models.Model):
+class ExternalDatabaseVaccination(models.Model):
     date = models.DateField()
     total_vaccinations = models.BigIntegerField()
     people_vaccinated = models.BigIntegerField()
@@ -17,11 +17,14 @@ class ExternalVaccination(models.Model):
     daily_people_vaccinated = models.BigIntegerField()
     daily_people_vaccinated_per_hundred = models.FloatField()
 
+    class Meta:
+        managed = False
+
     def __str__(self):
         return f"{self.date}"
 
 
-class ExternalStatisctic(models.Model):
+class ExternalDatabaseStatistic(models.Model):
     date = models.DateField()
     region = models.CharField(max_length=255)
     infection = models.BigIntegerField()
@@ -30,6 +33,9 @@ class ExternalStatisctic(models.Model):
     death_per_day = models.IntegerField()
     infection_per_day = models.IntegerField()
     recovery_per_day = models.IntegerField()
+
+    class Meta:
+        managed = False
 
     def __str__(self):
         return f"{self.date} - {self.region}"
@@ -56,3 +62,26 @@ class StopCoronaData(models.Model):
 
     def __str__(self):
         return f"{self.region}: {self.start_date} - {self.end_date}"
+
+
+class GogovGlobalData(models.Model):
+    date = models.DateField(unique=True)
+    first_component = models.IntegerField()
+    full_vaccinated = models.IntegerField()
+    children_vaccinated = models.IntegerField()
+    revaccinated = models.IntegerField()
+    need_revaccination = models.IntegerField()
+
+
+class GogovRegionData(models.Model):
+    region = models.TextField()
+    date = models.DateField()
+    vaccinated = models.IntegerField()
+    avg_people_per_day = models.IntegerField()
+    full_vaccinated = models.IntegerField()
+    revaccinated = models.IntegerField()
+    need_revaccination = models.IntegerField()
+    children_vaccinated = models.IntegerField()
+
+    class Meta:
+        unique_together = ('region', 'date')

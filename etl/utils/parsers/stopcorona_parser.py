@@ -93,10 +93,13 @@ class Parser:
 
     @staticmethod
     def _clean_table_data(table_data):
-        table_data = table_data[5:]
+        if 'Наименование субъекта' in table_data[0].text:
+            table_data = table_data[5:]
+        else:
+            table_data = table_data[6:]
 
         for i, td in enumerate(table_data):
-            table_data[i] = re.sub('<.*?>|[\\n\\t\\r]', '', str(td)).strip()
+            table_data[i] = re.sub('\\n\\t\\r', '', td.text).strip()
 
             temp = table_data[i].replace(' ', '')
             if temp.isdecimal():

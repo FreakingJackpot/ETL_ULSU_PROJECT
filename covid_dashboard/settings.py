@@ -74,6 +74,14 @@ DATABASES = {
         "PASSWORD": env.str("DB_PASS", "postgres"),
         "HOST": env.str("DB_HOST", "localhost"),
         "PORT": env.str("DB_PORT", "5432"),
+    },
+    'external_covid': {
+        'ENGINE': 'django.db.backends.postgresql',
+        "NAME": env.str("EXTERNAL_DB_NAME", "external_covid"),
+        "USER": env.str("EXTERNAL_DB_USER", "postgres"),
+        "PASSWORD": env.str("EXTERNAL_DB_PASS", "postgres"),
+        "HOST": env.str("EXTERNAL_DB_HOST", "localhost"),
+        "PORT": env.str("EXTERNAL_DB_PORT", "5433"),
     }
 }
 

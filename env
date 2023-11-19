@@ -8,3 +8,9 @@ DB_USER=username
 DB_PASS=password
 DB_HOST=postgres
 DB_PORT=5432
+
+EXTERNAL_DB_NAME=external_covid
+EXTERNAL_DB_USER=postgres
+EXTERNAL_DB_PASS=postgres
+EXTERNAL_DB_HOST=external_postgres
+EXTERNAL_DB_PORT=5433

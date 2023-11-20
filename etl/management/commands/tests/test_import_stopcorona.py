@@ -3,9 +3,9 @@ from datetime import datetime
 from etl.models import StopCoronaData
 from etl.management.commands.import_stopcorona_data import Command
 
-class StopParserTestCase(TestCase):
-    def test_upload_to_db_(self):
-        StopCoronaData.objects.filter(region='Region 1').delete()
+class ImportStopcoronaDataTestCase(TestCase):
+
+    def test_upload_to_db_when_new_data(self):
         data = [{
                 'start_date': datetime.strptime('23.10.2023', '%d.%m.%Y').date(),
                 'end_date': datetime.strptime('29.10.2023', '%d.%m.%Y').date(),
@@ -43,9 +43,9 @@ class StopParserTestCase(TestCase):
 
         StopCoronaData.objects.filter(region='Region 1').delete()
 
-    def test_upload_to_db_duble(self):
-            StopCoronaData.objects.filter(region='Region 1').delete()
-            StopCoronaData.objects.create(
+    def test_upload_to_db_no_create_when_dublicates(self):
+
+        StopCoronaData.objects.create(
                         start_date='2022-01-01',
                         end_date='2022-01-09',
                         region='Region 1',
@@ -55,7 +55,7 @@ class StopParserTestCase(TestCase):
                         deaths=5
                     )
 
-            data = [{
+        data = [{
                 'start_date': datetime.strptime('01.01.2022', '%d.%m.%Y').date(),
                 'end_date': datetime.strptime('09.01.2022', '%d.%m.%Y').date(),
                 'region': 'Region 1',
@@ -64,9 +64,9 @@ class StopParserTestCase(TestCase):
                 'recovered': 50,
                 'deaths': 5}]
 
-            count = StopCoronaData.objects.count()
-            сommand = Command()
-            сommand.upload_to_db(data)
-            self.assertEqual(count, StopCoronaData.objects.count())
+        count = StopCoronaData.objects.count()
+        сommand = Command()
+        сommand.upload_to_db(data)
+        self.assertEqual(count, StopCoronaData.objects.count())
 
-            StopCoronaData.objects.filter(region='Region 1').delete()
+        StopCoronaData.objects.filter(region='Region 1').delete()

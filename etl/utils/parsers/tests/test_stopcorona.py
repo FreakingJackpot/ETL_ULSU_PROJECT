@@ -4,7 +4,7 @@ from unittest.mock import patch
 from etl.utils.parsers.stopcorona_parser import StopCoronaParser
 from bs4 import BeautifulSoup
 
-class StopParserTestCase(TestCase):
+class StopCoronaParserTestCase(TestCase):
 
     @patch("etl.utils.parsers.stopcorona_parser.requests.get")
     def test_get_url_list(self, mock_get):

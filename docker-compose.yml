@@ -1,4 +1,4 @@
-version: '3.6'
+version: '3.8'
 
 services:
   postgres:
@@ -13,6 +13,16 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
 
+  external_postgres:
+    image: freakingjackpot/etl_project:external_database
+    restart: always
+    environment:
+      POSTGRES_USER: ${EXTERNAL_DB_USER}
+      POSTGRES_PASSWORD: ${EXTERNAL_DB_PASS}
+      POSTGRES_DB: ${EXTERNAL_DB_NAME}
+    ports:
+      - 5433:5433
+
   web:
     build: .
     container_name: web
@@ -25,6 +35,7 @@ services:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_DEBUG: ${DJANGO_DEBUG}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS}
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}

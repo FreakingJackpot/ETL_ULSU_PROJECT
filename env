@@ -1,0 +1,16 @@
+DJANGO_DEBUG=true
+DJANGO_SECRET_KEY=meh
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:1337,http://0.0.0.0:1337,http://127.0.0.1:1337
+
+DB_NAME=covid_dashboard
+DB_USER=username
+DB_PASS=password
+DB_HOST=postgres
+DB_PORT=5432
+
+EXTERNAL_DB_NAME=external_covid
+EXTERNAL_DB_USER=postgres
+EXTERNAL_DB_PASS=postgres
+EXTERNAL_DB_HOST=external_postgres
+EXTERNAL_DB_PORT=5433

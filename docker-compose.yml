@@ -8,6 +8,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_NAME}
+      PGUSER: ${DB_USER}
     ports:
       - 5432:5432
     volumes:
@@ -41,6 +42,9 @@ services:
       DB_PASS: ${DB_PASS}
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
+      GRAYLOG_HTTP_ENDPOINT_PORT: ${GRAYLOG_HTTP_ENDPOINT_PORT}
+      GRAYLOG_HTTP_ENDPOINT_IP: ${GRAYLOG_HTTP_ENDPOINT_IP}
+
     depends_on:
       - postgres
 
@@ -48,10 +52,51 @@ services:
     build: ./nginx
     volumes:
       - static_volume:/home/app/web/static
+    environment:
+      GRAYLOG_IP: ${GRAYLOG_HTTP_ENDPOINT_IP}
     ports:
       - 1337:80
     depends_on:
       - web
+
+  mongo:
+    image: mongo:5.0.13
+    volumes:
+      - mongo_data:/data/db
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    environment:
+      - http.host=0.0.0.0
+      - transport.host=localhost
+      - network.host=0.0.0.0
+      - "ES_JAVA_OPTS=-Dlog4j2.formatMsgNoLookups=true -Xms512m -Xmx512m"
+
+  graylog:
+    image: graylog/graylog:5.0
+    volumes:
+      - graylog_data:/usr/share/graylog/data
+    environment:
+      GRAYLOG_PASSWORD_SECRET: ${GRAYLOG_PASSWORD_SECRET}
+      GRAYLOG_HTTP_EXTERNAL_URI: ${GRAYLOG_HTTP_EXTERNAL_URI}
+      GRAYLOG_ROOT_PASSWORD_SHA2: ${GRAYLOG_ROOT_PASSWORD_SHA2}
+      GRAYLOG_HTTP_ENDPOINT: ${GRAYLOG_HTTP_ENDPOINT}
+    restart: always
+    depends_on:
+      - mongo
+      - elasticsearch
+    ports:
+      # Graylog web interface and REST API
+      - 9000:9000
+      # Syslog TCP
+      - 1514:1514
+      # GELF HTTP
+      - 12201:12201
 volumes:
   postgres_data:
   static_volume:
+  mongo_data:
+  es_data:
+  graylog_data:

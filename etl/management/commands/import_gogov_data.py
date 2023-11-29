@@ -30,7 +30,6 @@ class Command(BaseCommand):
             GogovRegionData(**item) for item in regions_data if
             (item['region'], item['date']) not in uploaded
         ]
-
         try:
             GogovRegionData.objects.bulk_create(objects, batch_size=500)
         except DatabaseError as e:

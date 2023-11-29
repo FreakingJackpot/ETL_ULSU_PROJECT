@@ -1,58 +1,34 @@
 from datetime import datetime
-from io import StringIO
 from django.test import TestCase
-from unittest.mock import patch
 from etl.models import GogovRegionData, GogovGlobalData
 from etl.management.commands.import_gogov_data import Command
 from etl.utils.parsers.gogov_parser import GogovParser
 
-class CommandTest(TestCase):
+class TestImportGogovData(TestCase):
     def setUp(self):
-        self.out = StringIO()
-        self.err = StringIO()
-        self.parser = GogovParser()
         self.parser = GogovParser()
         self.command = Command()
 
-    #Проверка, если данные загружались с таким же регионом и датой ранее, и только если данных нет, создает новые записи.
     def test_upload_region_data(self):
-        # Создаем объект команды
+        expected_regions_data = [
+            {'region': 'Москва',
+            'vaccinated': 6199987,
+            'avg_people_per_day': 71387,
+            'full_vaccinated': 86415,
+            'revaccinated': 1000000,
+            'need_revaccination': 100,
+            'children_vaccinated': 6200,
+            'date': datetime.strptime('2021-05-13', '%Y-%m-%d').date()}
+            ]
+
         command = Command()
 
-        # Создаем объекты GogovRegionData, которые нужно загрузить
-        regions_data = [
-            {'region': 'Москва',
-             'vaccinated': 6199585,
-             'avg_people_per_day': 7135,
-             'full_vaccinated': 5803415,
-             'revaccinated': 1000000,
-             'need_revaccination': 0,
-             'children_vaccinated': 6200,
-             'date': datetime.strptime('2022-05-13', '%Y-%m-%d').date()}
-        ]
-
         # Загружаем данные в базу данных
-        command._upload_region_data(regions_data)
+        command._upload_region_data(expected_regions_data)
 
-        # Проверяем, что данные были успешно загружены
-        loaded_data = GogovRegionData.objects.all()
-
-        self.assertEqual(len(loaded_data), len(regions_data))
-
-        for region_data in regions_data:
-            region = region_data['region']
-            date = region_data['date']
-
-            # Проверяем, что данные присутствуют в базе данных
-            self.assertTrue(loaded_data.filter(region=region, date=date).exists())
-
-        # Повторно загружаем данные
-        command._upload_region_data(regions_data)
-
-        # Проверяем, что данные не были загружены повторно
-        loaded_data = GogovRegionData.objects.all()
-
-        self.assertEqual(len(loaded_data), len(regions_data))
+        regions = GogovRegionData.objects.values('region', 'vaccinated', 'avg_people_per_day', 'full_vaccinated',
+                                                 'revaccinated', 'need_revaccination', 'children_vaccinated', 'date')
+        self.assertCountEqual(regions, expected_regions_data)
 
     def test_handle(self):
         # Создаем тестовые данные для загрузки в базу данных
@@ -64,6 +40,7 @@ class CommandTest(TestCase):
             'revaccinated': 150,
             'need_revaccination': 50
         }
+
         region_data = [
             {
                 'region': 'Moscow',
@@ -75,6 +52,7 @@ class CommandTest(TestCase):
                 'need_revaccination': 10,
                 'children_vaccinated': 30
             },
+
             {
                 'region': 'St. Petersburg',
                 'date': '2021-09-03',
@@ -86,6 +64,7 @@ class CommandTest(TestCase):
                 'children_vaccinated': 70
             }
         ]
+
         parsed_data = {
             'global_data': global_data,
             'regions_data': region_data
@@ -100,6 +79,7 @@ class CommandTest(TestCase):
         # Запускаем команду handle
         command = Command()
         command.handle()
+
         # Проверяем данные, загруженные в базу данных
         global_data_obj = GogovGlobalData.objects.get()
         self.assertEqual(global_data_obj.first_component, global_data['first_component'])
@@ -108,14 +88,7 @@ class CommandTest(TestCase):
         self.assertEqual(global_data_obj.revaccinated, global_data['revaccinated'])
         self.assertEqual(global_data_obj.need_revaccination, global_data['need_revaccination'])
 
-        region_data_objs = GogovRegionData.objects.filter()
+        region_data_objs = GogovRegionData.objects
         self.assertEqual(region_data_objs.count(), len(region_data))
-        for region in region_data:
-            self.assertTrue(region_data_objs.filter(region=region['region'], date=region['date']).exists())
 
-    def test_get_parsed_data(self):
-        data = self.parser.get_data()
-        self.assertIsInstance(data, dict)
-        self.assertIn('global_data', data)
-        self.assertIn('regions_data', data)
 

@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 from environs import Env
-import django_loki_reloaded
 
 env = Env()
 env.read_env()

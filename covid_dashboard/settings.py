@@ -5,21 +5,14 @@ from environs import Env
 env = Env()
 env.read_env()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env.str("DJANGO_SECRET_KEY")
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DJANGO_DEBUG")
 
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
 
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -28,11 +21,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_prometheus',
     'etl',
     'api',
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -40,6 +35,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'covid_dashboard.urls'
@@ -47,8 +43,7 @@ ROOT_URLCONF = 'covid_dashboard.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
+        'DIRS': [BASE_DIR / 'templates', ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -63,12 +58,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'covid_dashboard.wsgi.application'
 
-# Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django_prometheus.db.backends.postgresql',
         "NAME": env.str("DB_NAME", "postgres"),
         "USER": env.str("DB_USER", "postgres"),
         "PASSWORD": env.str("DB_PASS", "postgres"),
@@ -76,7 +68,7 @@ DATABASES = {
         "PORT": env.str("DB_PORT", "5432"),
     },
     'external_covid': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django_prometheus.db.backends.postgresql',
         "NAME": env.str("EXTERNAL_DB_NAME", "external_covid"),
         "USER": env.str("EXTERNAL_DB_USER", "postgres"),
         "PASSWORD": env.str("EXTERNAL_DB_PASS", "postgres"),
@@ -84,9 +76,6 @@ DATABASES = {
         "PORT": env.str("EXTERNAL_DB_PORT", "5433"),
     }
 }
-
-# Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -103,9 +92,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Internationalization
-# https://docs.djangoproject.com/en/4.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
@@ -114,18 +100,40 @@ USE_I18N = True
 
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
-
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'static'
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
+
+LOGGING = {
+    'version': 1,
+    "disable_existing_loggers": False,
+    'formatters': {
+        'loki': {
+            'class': 'django_loki.LokiFormatter',
+            'format': '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] [%(funcName)s] %(message)s',
+            'datefmt': '%d-%m-%Y %H:%M:%S',
+        },
+    },
+    'handlers': {
+        'loki': {
+            'level': 'DEBUG',
+            'class': 'django_loki.LokiHttpHandler',
+            'host': env.str("LOKI_HOST", "loki"),
+            'formatter': 'loki',
+            'src_host': 'web',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['loki', ],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    }
+}
 
 STOPCORONA_URL_BASE = 'https://xn--90aivcdt6dxbc.xn--p1ai/{}'
 STOPCORONA_URL_ARTICLES_PAGE = STOPCORONA_URL_BASE.format('stopkoronavirus/?isAjax=Y&action=itemsMore&PAGEN_1={}')

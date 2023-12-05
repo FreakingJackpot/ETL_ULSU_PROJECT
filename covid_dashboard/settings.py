@@ -23,7 +23,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_prometheus',
     'etl',
-    'api'
+    'api',
 ]
 
 MIDDLEWARE = [

@@ -57,13 +57,12 @@ class GogovParser:
 
         data = soup.find(id="data")
         global_section = data.p
-
         global_data = cls._parse_global_data(global_section)
 
         regions_tbody = data.find(id='m-table').find("tbody")
         regions_data = cls._get_regions_data(regions_tbody)
-
         return {"global_data": global_data, "regions_data": regions_data}
+
 
     @classmethod
     def _parse_global_data(cls, global_section):
@@ -76,24 +75,23 @@ class GogovParser:
         for i, field_name in cls._global_spans.items():
             global_data[field_name] = int(cls._global_span_clean_function(spans[i].text))
         global_data['revaccinated'] = int(cls._global_span_clean_function(global_section.find("b").text))
-
         return global_data
 
     @classmethod
     def _get_regions_data(cls, regions_tbody):
         regions_data = []
+
         for tr in regions_tbody.find_all('tr'):
             region_info = {}
 
             for i, td in enumerate(tr.find_all('td')):
                 field_info = cls._region_fields.get(i)
+
                 if field_info:
                     value = td.a.text if field_info['name'] == 'region' else td.attrs.get('data-text')
                     clean_method = field_info.get('clean_method')
                     region_info[field_info['name']] = clean_method(value) if clean_method else value
-
             regions_data.append(region_info)
-
         return regions_data
 
     @classmethod

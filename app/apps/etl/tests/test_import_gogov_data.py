@@ -1,8 +1,8 @@
 from datetime import datetime
 from django.test import TestCase
-from etl.models import GogovRegionData, GogovGlobalData
-from etl.management.commands.import_gogov_data import Command
-from etl.utils.parsers.gogov_parser import GogovParser
+from apps.etl.models import GogovRegionData, GogovGlobalData
+from apps.etl.management.commands.import_gogov_data import Command
+from apps.etl.utils.parsers.gogov_parser import GogovParser
 
 class TestImportGogovData(TestCase):
     def setUp(self):

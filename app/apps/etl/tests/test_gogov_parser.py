@@ -1,6 +1,6 @@
 from unittest.mock import patch
 from django.test import TestCase
-from etl.utils.parsers.gogov_parser import *
+from apps.etl.utils.parsers.gogov_parser import *
 
 class GogovTestCase(TestCase):
 

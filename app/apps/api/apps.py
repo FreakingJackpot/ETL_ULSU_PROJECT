@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class EtlConfig(AppConfig):
+class ApiConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'etl'
+    name = 'apps.api'

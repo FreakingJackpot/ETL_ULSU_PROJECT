@@ -1,4 +1,50 @@
 version: '3.8'
+x-web-config: &web-config
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+  DJANGO_DEBUG: ${DJANGO_DEBUG}
+  DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+  DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS}
+  DB_NAME: ${DB_NAME}
+  DB_USER: ${DB_USER}
+  DB_PASS: ${DB_PASS}
+  DB_HOST: ${DB_HOST}
+  DB_PORT: ${DB_PORT}
+  LOKI_HOST: ${LOKI_HOST}
+
+x-airflow-config: &airflow-config
+  <<: *web-config
+  AIRFLOW__CORE__DAGS_FOLDER: /dags
+  AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+  AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql://airflow:${DB_AIRFLOW_PASS}@postgres:5432/airflow
+
+  AIRFLOW__CORE__PARALLELISM: ${AIRFLOW_PARALLELISM}
+  AIRFLOW__CORE__DAG_CONCURRENCY: ${AIRFLOW_DAG_CONCURRENCY}
+  AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG: ${AIRFLOW_MAX_ACTIVE_RUNS_PER_DAG}
+  AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW_CORE_LOAD_EXAMPLES}
+  AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS: ${AIRFLOW_CORE_LOAD_DEFAULT_CONNECTIONS}
+
+  AIRFLOW__EMAIL__DEFAULT_EMAIL_ON_RETRY: ${AIRFLOW_EMAIL_DEFAULT_EMAIL_ON_RETRY}
+  AIRFLOW__EMAIL__DEFAULT_EMAIL_ON_FAILURE: ${AIRFLOW_EMAIL_DEFAULT_EMAIL_ON_FAILURE}
+
+  AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+  AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:${DB_AIRFLOW_PASS}@postgres/airflow
+  AIRFLOW_DJANGO_PATH_TO_SETTINGS_PY: /app/covid_dashboard
+
+  AIRFLOW__SCHEDULER__STATSD_ON: "True"
+  AIRFLOW__SCHEDULER__STATSD_HOST: statsd-exporter
+  AIRFLOW__SCHEDULER__STATSD_PORT: 8125
+  AIRFLOW__SCHEDULER__STATSD_PREFIX: airflow
+
+x-airflow-base: &airflow-base
+  build:
+    context: ./
+    dockerfile: ./airflow/Dockerfile
+  restart: always
+  volumes:
+      - ./airflow/dags:/dags
+      - ./app:/app
+
 services:
   postgres:
     image: postgres
@@ -9,10 +55,14 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_NAME}
       PGUSER: ${DB_USER}
+      POSTGRES_AIRFLOW_USER: airflow
+      POSTGRES_AIRFLOW_PASSWORD: ${DB_AIRFLOW_PASS}
+      POSTGRES_AIRFLOW_DB: airflow
     ports:
       - 5432:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+      - ./postgres:/docker-entrypoint-initdb.d
 
   external_postgres:
     image: freakingjackpot/etl_project:external_database
@@ -26,7 +76,7 @@ services:
       - 5433:5433
 
   web:
-    build: .
+    build: ./app
     container_name: web
     command: uvicorn covid_dashboard.asgi:application --host 0.0.0.0 --port 8000
     expose:
@@ -34,19 +84,56 @@ services:
     volumes:
       - static_volume:/home/app/web/static
     environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
-      DJANGO_DEBUG: ${DJANGO_DEBUG}
-      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
-      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASS: ${DB_PASS}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      LOKI_HOST: ${LOKI_HOST}
+      <<: *web-config
 
     depends_on:
       - postgres
+
+  redis:
+    container_name: redis
+    image: redis:7.2.3-alpine
+
+  airflow:
+    <<: *airflow-base
+    container_name: airflow
+    environment:
+      <<: *airflow-config
+      AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: ${AIRFLOW_SCHEDULER_DAG_DIR_LIST_INTERVAL}
+      AIRFLOW__SCHEDULER__CATCHUP_BY_DEFAULT: ${AIRFLOW_SCHEDULER_CATCHUP_BY_DEFAULT}
+      AIRFLOW__SCHEDULER__MAX_THREADS: ${AIRFLOW_SCHEDULER_MAX_THREADS}
+
+      AIRFLOW__WEBSERVER__LOG_FETCH_TIMEOUT_SEC: ${AIRFLOW_WEBSERVER_LOG_FETCH_TIMEOUT_SEC}
+
+
+    command: >
+      -c "sleep 10 &&
+           /entrypoint db init &&
+          (/entrypoint webserver &) &&
+          (/entrypoint celery flower &) &&
+           /entrypoint scheduler"
+
+    ports:
+      # Celery Flower
+      - 5555:5555
+      # Airflow Webserver
+      - 8081:8080
+
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    <<: *airflow-base
+    container_name: airflow-worker
+    environment:
+      <<: *airflow-config
+
+    command: -c " sleep 10 && /entrypoint celery worker"
+
+    depends_on:
+      - airflow
+      - postgres
+      - redis
 
   nginx:
     build: ./nginx
@@ -93,7 +180,6 @@ services:
     expose:
       - 9100
 
-
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:latest
     container_name: nginx-exporter
@@ -112,7 +198,7 @@ services:
     container_name: postgres-exporter
     restart: unless-stopped
     environment:
-      - DATA_SOURCE_NAME=postgresql://${DB_USER}:${DB_PASS}@postgres:5432/${DB_NAME}?sslmode=disable
+      - DATA_SOURCE_NAME="postgresql://${DB_USER}:${DB_PASS}@postgres:5432/${DB_NAME}?sslmode=disable,postgresql://airflow:${DB_AIRFLOW_PASS}@postgres:5432/airflow?sslmode=disable"
     ports:
       - 9187:9187
     depends_on:
@@ -121,10 +207,6 @@ services:
   cadvisor:
     container_name: cadvisor
     image: gcr.io/cadvisor/cadvisor:latest
-    ports:
-      - "8080:8080"
-    devices:
-      - "/dev/kmsg"
     command:
       - "--housekeeping_interval=30s"
       - "--docker_only=true"
@@ -140,6 +222,10 @@ services:
       - /etc/localtime:/etc/localtime:ro
     privileged: true
     restart: unless-stopped
+    ports:
+      - "8080:8080"
+    devices:
+      - "/dev/kmsg"
 
   blackbox-exporter:
     image: "prom/blackbox-exporter:latest"
@@ -152,11 +238,17 @@ services:
     ports:
       - 9115:9115
 
+  statsd-exporter:
+    image: prom/statsd-exporter
+    container_name: airflow-statsd-exporter
+    command: "--statsd.listen-udp=:8125 --web.listen-address=:9102"
+    ports:
+      - 9123:9102
+      - 8125:8125/udp
+
   alertmanager:
     image: prom/alertmanager:latest
     container_name: alertmanager
-    environment:
-      - TELEPUSH_TOKEN=${TELEPUSH_TOKEN}
     volumes:
       - ./alertmanager/:/etc/alertmanager/
     restart: always
@@ -190,9 +282,9 @@ services:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     environment:
-      - GF_SECURITY_ADMIN_USER=${ADMIN_USER}
-      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=${GF_USERS_ALLOW_SIGN_UP}
     restart: unless-stopped
     ports:
       - 3000:3000

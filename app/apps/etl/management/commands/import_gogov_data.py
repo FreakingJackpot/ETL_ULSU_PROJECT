@@ -1,8 +1,8 @@
 from django.core.management.base import BaseCommand
 from django.db import DatabaseError
 
-from etl.utils.parsers.gogov_parser import GogovParser
-from etl.models import GogovGlobalData, GogovRegionData
+from apps.etl.utils.parsers.gogov_parser import GogovParser
+from apps.etl.models import GogovGlobalData, GogovRegionData
 
 
 class Command(BaseCommand):

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from etl.models import StopCoronaData, CsvData,GogovRegionData,GogovGlobalData,ExternalDatabaseStatistic,ExternalDatabaseVaccination
+from apps.etl.models import StopCoronaData, CsvData,GogovRegionData,GogovGlobalData,ExternalDatabaseStatistic,ExternalDatabaseVaccination
 
 # Register your models here.
 admin.site.register(CsvData)

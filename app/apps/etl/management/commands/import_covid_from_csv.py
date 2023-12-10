@@ -2,7 +2,7 @@ import csv
 
 from django.core.management.base import BaseCommand
 
-from etl.forms import CsvDataForm
+from apps.etl.forms import CsvDataForm
 
 
 class Command(BaseCommand):

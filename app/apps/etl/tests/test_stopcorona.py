@@ -1,7 +1,7 @@
 from unittest import TestCase
 from datetime import datetime
 from unittest.mock import patch
-from etl.utils.parsers.stopcorona_parser import StopCoronaParser
+from apps.etl.utils.parsers.stopcorona_parser import StopCoronaParser
 from bs4 import BeautifulSoup
 
 class StopCoronaParserTestCase(TestCase):

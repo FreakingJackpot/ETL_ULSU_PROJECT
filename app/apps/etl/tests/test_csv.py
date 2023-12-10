@@ -1,14 +1,14 @@
 import csv
 import os
-from etl.models import CsvData
+from apps.etl.models import CsvData
 from unittest import TestCase
 
-from etl.management.commands.import_covid_from_csv import Command
+from apps.etl.management.commands.import_covid_from_csv import Command
 # Create your tests here.
 class ImportDataTests(TestCase):
     def setUp(self):
         # 1. Создаем csv файл
-        with open('test_data.csv', 'w', newline='') as csvfile:
+        with open('./etl/tests_data/tests_data.csv', 'w', newline='') as csvfile:
             fieldnames = ['date', 'cases', 'deaths', 'days_14_cases_per_100000']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
@@ -21,7 +21,7 @@ class ImportDataTests(TestCase):
     def test_csv_loading(self):
         com = Command()
         # 2. Запускаем команду обработки csv файла
-        com.handle(file_path = ['test_data.csv'])
+        com.handle(file_path = ['./etl/tests_data/tests_data.csv'])
 
         # 3. Загружаем данные из бд
         data_in_db = CsvData.objects.count()
@@ -38,4 +38,4 @@ class ImportDataTests(TestCase):
             CsvData.objects.filter(date='2023-11-18', cases=200, deaths=20, days_14_cases_per_100000=25.8).exists())
 
     def tearDown(self):
-        os.remove('test_data.csv')
+        os.remove('./etl/tests_data/tests_data.csv')

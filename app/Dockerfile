@@ -1,4 +1,4 @@
-FROM python:3.10.0-slim-bullseye
+FROM python:3.8.18-slim-bullseye
 LABEL authors="jackpot"
 
 RUN mkdir -p /home/app
@@ -14,7 +14,7 @@ COPY requirements.txt .
 RUN  pip install --upgrade pip && pip install  --no-cache-dir -r requirements.txt
 
 #Копирование и настройка скрипта ожидания подъема PostgreSQL
-COPY ./entrypoint.sh $HOME
+COPY entrypoint.sh $HOME
 RUN sed -i 's/\r$//g' $HOME/entrypoint.sh
 RUN chmod +x $HOME/entrypoint.sh
 

@@ -1,8 +1,8 @@
 from django.core.management.base import BaseCommand
 from django.db import DatabaseError
 
-from etl.utils.parsers.stopcorona_parser import StopCoronaParser
-from etl.models import StopCoronaData
+from apps.etl.utils.parsers.stopcorona_parser import StopCoronaParser
+from apps.etl.models import StopCoronaData
 
 
 class Command(BaseCommand):

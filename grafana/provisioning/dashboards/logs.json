@@ -55,10 +55,7 @@
       "type": "logs"
     },
     {
-      "datasource": {
-        "type": "loki",
-        "uid": "fb21a050-fcd4-4f8a-8d37-8547433706f1"
-      },
+      "datasource": "Loki",
       "gridPos": {
         "h": 8,
         "w": 12,

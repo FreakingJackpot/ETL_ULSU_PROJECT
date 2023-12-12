@@ -1,4 +1,4 @@
-#!/usr/bin/env_template python
+#!/usr/bin/env.example python
 """Django's command-line utility for administrative tasks."""
 import os
 import sys

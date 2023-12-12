@@ -14,15 +14,14 @@ COPY requirements.txt .
 RUN  pip install --upgrade pip && pip install  --no-cache-dir -r requirements.txt
 
 #Копирование и настройка скрипта ожидания подъема PostgreSQL
-COPY entrypoint.sh $HOME
+COPY ./app/entrypoint.sh $HOME
 RUN sed -i 's/\r$//g' $HOME/entrypoint.sh
 RUN chmod +x $HOME/entrypoint.sh
 
 #Копирование кода приложения Django
-COPY . $APP_DIR
+COPY ./app $APP_DIR
 
 RUN chown -R app:app $APP_DIR
-
 USER app
 
 #Ожидание подключения к postgres

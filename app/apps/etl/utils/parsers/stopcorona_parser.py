@@ -10,19 +10,20 @@ from django.conf import settings
 class StopCoronaParser:
     _url_base = settings.STOPCORONA_URL_BASE
     _url_articles_page = settings.STOPCORONA_URL_ARTICLES_PAGE
-    _max_page = settings.MAX_STOPCORONA_PAGE
 
     _region_fields = ['start_date', 'end_date', 'region', 'hospitalized', 'recovered', 'infected', 'deaths']
-    _date_matching_pattern = r"\d+\.?\d*\.? - \d+\.?\d*|\d+\.?\d*- \d+\.?\d*|\d+\.?\d*\.\d{4} *– *\d+\.?\d*\.\d{4}"
+    _date_matching_pattern = r"\d+\.\d+\.\d{4} *[-–] *\d+\.?\d+\.\d{4}|\d+\.?\d+\.? *[-–] *\d+\.?\d+\.\d{4}"
     _date_format = '%d.%m.%Y'
 
-    def __init__(self):
-        self.url_list = self._get_url_list()
+    def __init__(self, all=False):
+        self.url_list = self._get_url_list(all)
 
     @classmethod
-    def _get_url_list(cls):
+    def _get_url_list(cls, all):
         urls = []
-        for page in range(1, cls._max_page + 1):
+        page = 1
+        search_function = cls._get_all_report_urls_on_page if all else cls._get_first_report_url_on_page
+        while page:
             req = requests.get(cls._url_articles_page.format(page))
 
             src = req.text
@@ -31,12 +32,35 @@ class StopCoronaParser:
             media_page = soup.find("body")
             material_cards = media_page.find_all("a", class_="u-material-card u-material-cards__card")
 
-            for link in material_cards:
-                href = str(link.get('href'))
-                if "v-rossii-za-nedelyu-vyzdorovelo-" in href:
-                    urls.append(href)
+            page = None if search_function(material_cards, urls) else page + 1
 
         return urls
+
+    @classmethod
+    def _get_all_report_urls_on_page(cls, material_cards, urls):
+        repeated = False
+        for card in material_cards:
+            href = str(card.get('href'))
+            if href in urls:
+                repeated = True
+                break
+
+            if "v-rossii-za-nedelyu-vyzdorovelo-" in href:
+                urls.append(href)
+
+        return repeated
+
+    @classmethod
+    def _get_first_report_url_on_page(cls, material_cards, urls):
+        got_url = False
+        for card in material_cards:
+            href = str(card.get('href'))
+            if "v-rossii-za-nedelyu-vyzdorovelo-" in href:
+                urls.append(href)
+                got_url = True
+                break
+
+        return got_url
 
     @classmethod
     def _parse_url_list(cls, url_list):
@@ -83,19 +107,17 @@ class StopCoronaParser:
             print({'error': f'Can\'t split dates properly. No matching pattern.', 'dates': dates})
             return
 
-        if len(dates[0].split('.')) == 3:
-            dates[0], dates[1] = (datetime.strptime(dates[0], cls._date_format),
-                                  datetime.strptime(dates[1], cls._date_format))
+        dates = list(map(lambda x: x.strip(), dates))
+
+        if len(dates[0].split('.')) == 3 and len(dates[0]) > 6:
+            dates[0], dates[1] = (datetime.strptime(dates[0], cls._date_format).date(),
+                                  datetime.strptime(dates[1], cls._date_format).date())
         else:
-            current_year = datetime.now().year
-
+            year = dates[1].split('.')[-1]
             try:
-                if int(dates[0].split('.')[1].strip()) > int(dates[1].split('.')[1].strip()):
-                    dates[0] = datetime.strptime(dates[0].strip() + f'.{current_year - 1}', cls._date_format).date()
-                else:
-                    dates[0] = datetime.strptime(dates[0].strip() + f'.{current_year}', cls._date_format).date()
-
-                dates[1] = datetime.strptime(dates[1].strip() + f'.{current_year}', cls._date_format).date()
+                dates[0] = dates[0][:-1] if dates[0][-1] == '.' else dates[0]
+                dates[0] = datetime.strptime(dates[0] + f'.{year}', cls._date_format).date()
+                dates[1] = datetime.strptime(dates[1], cls._date_format).date()
             except ValueError:
                 print(f"Invalid date format: {dates}")
                 return
@@ -127,8 +149,5 @@ class StopCoronaParser:
 
         return regions_data
 
-    def get_all(self):
+    def get_parsed_data(self):
         return self._parse_url_list(self.url_list)
-
-    def get_latest(self):
-        return self._parse_url_list(self.url_list[:1])

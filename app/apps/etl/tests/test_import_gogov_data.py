@@ -4,6 +4,7 @@ from apps.etl.models import GogovRegionData, GogovGlobalData
 from apps.etl.management.commands.import_gogov_data import Command
 from apps.etl.utils.parsers.gogov_parser import GogovParser
 
+
 class TestImportGogovData(TestCase):
     def setUp(self):
         self.parser = GogovParser()
@@ -12,14 +13,14 @@ class TestImportGogovData(TestCase):
     def test_upload_region_data(self):
         expected_regions_data = [
             {'region': 'Москва',
-            'vaccinated': 6199987,
-            'avg_people_per_day': 71387,
-            'full_vaccinated': 86415,
-            'revaccinated': 1000000,
-            'need_revaccination': 100,
-            'children_vaccinated': 6200,
-            'date': datetime.strptime('2021-05-13', '%Y-%m-%d').date()}
-            ]
+             'vaccinated': 6199987,
+             'avg_people_per_day': 71387,
+             'full_vaccinated': 86415,
+             'revaccinated': 1000000,
+             'need_revaccination': 100,
+             'children_vaccinated': 6200,
+             'date': datetime.strptime('2021-05-13', '%Y-%m-%d').date()}
+        ]
 
         command = Command()
 
@@ -90,5 +91,3 @@ class TestImportGogovData(TestCase):
 
         region_data_objs = GogovRegionData.objects
         self.assertEqual(region_data_objs.count(), len(region_data))
-
-

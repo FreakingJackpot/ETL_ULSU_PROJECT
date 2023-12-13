@@ -1,5 +1,5 @@
-import os
 from pathlib import Path
+
 from environs import Env
 
 env = Env()
@@ -12,7 +12,6 @@ SECRET_KEY = env.str("DJANGO_SECRET_KEY")
 DEBUG = env.bool("DJANGO_DEBUG")
 
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
-
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -137,6 +136,7 @@ LOGGING = {
     }
 }
 
+DEFAULT_CSV_PATH = str(BASE_DIR.joinpath('apps/etl/data/data.csv'))
 STOPCORONA_URL_BASE = 'https://xn--90aivcdt6dxbc.xn--p1ai/{}'
 STOPCORONA_URL_ARTICLES_PAGE = STOPCORONA_URL_BASE.format('stopkoronavirus/?isAjax=Y&action=itemsMore&PAGEN_1={}')
 MAX_STOPCORONA_PAGE = 4

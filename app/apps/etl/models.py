@@ -71,17 +71,3 @@ class GogovGlobalData(models.Model):
     children_vaccinated = models.IntegerField()
     revaccinated = models.IntegerField()
     need_revaccination = models.IntegerField()
-
-
-class GogovRegionData(models.Model):
-    region = models.TextField()
-    date = models.DateField()
-    vaccinated = models.IntegerField()
-    avg_people_per_day = models.IntegerField()
-    full_vaccinated = models.IntegerField()
-    revaccinated = models.IntegerField()
-    need_revaccination = models.IntegerField()
-    children_vaccinated = models.IntegerField()
-
-    class Meta:
-        unique_together = ('region', 'date')

@@ -7,18 +7,13 @@ from bs4 import BeautifulSoup
 from django.conf import settings
 from django.test import TestCase
 
-from apps.etl.utils.parsers.gogov_parser import convert_int_str_to_int, convert_str_to_date, GogovParser
+from apps.etl.utils.parsers.gogov_parser import convert_str_to_date, GogovParser
 
 
 class GogovTestCase(TestCase):
 
     def setUp(self):
         self.parser = GogovParser()
-
-    def test_convert_int_str_to_int(self):
-        self.assertEqual(convert_int_str_to_int("123"), 123)
-        self.assertEqual(convert_int_str_to_int("0"), 0)
-        self.assertEqual(convert_int_str_to_int(""), 0)
 
     def test_convert_str_to_date(self):
         date_str = "01.01.22"
@@ -28,15 +23,6 @@ class GogovTestCase(TestCase):
 
         with self.assertRaises(ValueError):
             convert_str_to_date("invalid_date", date_format)
-
-    def test_GogovParser_clean_region_fields(self):
-        field = {"name": "region", "clean_method": partial(re.sub, "обл.", "область")}
-        cleaned_value = field["clean_method"]("Москва обл.")
-        self.assertEqual(cleaned_value, "Москва область")
-
-    def test_GovParser_init(self):
-        parser = GogovParser()
-        self.assertEqual(parser._url, settings.GOGOV_URL)
 
     @patch('requests.get')
     def test__get_page_html_success(self, mock_get):
@@ -79,24 +65,6 @@ class GogovTestCase(TestCase):
         }
         self.assertEqual(global_data, expected_data)
 
-    def test_get_regions_data(self):
-        test_data = open(settings.BASE_DIR.joinpath('apps/etl/tests_data/regions_data.text'), 'r', encoding='cp1251')
-        soup = BeautifulSoup(test_data.read(), 'html.parser')
-        soup = soup.find('tbody')
-        regions_data = self.parser._get_regions_data(soup)
-
-        expected_data = [{
-            'region': 'Санкт-Петербург',
-            'vaccinated': 3341922,
-            'avg_people_per_day': 45,
-            'full_vaccinated': 3132550,
-            'revaccinated': 927964,
-            'need_revaccination': 3132550,
-            'children_vaccinated': 7673,
-            'date': datetime.strptime("29.04.2023", '%d.%m.%Y').date()
-        }]
-        self.assertEqual(regions_data, expected_data)
-
     def test_parse_page(self):
         test_data = open(settings.BASE_DIR.joinpath('apps/etl/tests_data/global_region_data.text'), 'r',
                          encoding='cp1251')
@@ -110,20 +78,5 @@ class GogovTestCase(TestCase):
             'need_revaccination': 79699284,
             'revaccinated': 20829310,
         }
-        region_data = [{
-            'region': 'Санкт-Петербург',
-            'vaccinated': 3341922,
-            'avg_people_per_day': 45,
-            'full_vaccinated': 3132550,
-            'revaccinated': 927964,
-            'need_revaccination': 3132550,
-            'children_vaccinated': 7673,
-            'date': datetime.strptime("29.04.2023", '%d.%m.%Y').date()
-        }]
 
-        parsed_data = {
-            'global_data': global_data,
-            'regions_data': region_data
-        }
-
-        self.assertEqual(result, parsed_data)
+        self.assertEqual(result, global_data)

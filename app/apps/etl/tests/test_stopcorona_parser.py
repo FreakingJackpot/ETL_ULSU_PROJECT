@@ -32,8 +32,11 @@ class StopCoronaParserTestCase(TestCase):
 
         expected_urls = ['v-rossii-za-nedelyu-vyzdorovelo-article1', 'v-rossii-za-nedelyu-vyzdorovelo-article2',
                          'v-rossii-za-nedelyu-vyzdorovelo-article3']
-        StopCoronaParser._max_page = 1
-        urls = StopCoronaParser._get_url_list()
+        urls = StopCoronaParser._get_url_list(all=True)
+        self.assertListEqual(urls, expected_urls)
+
+        expected_urls = ['v-rossii-za-nedelyu-vyzdorovelo-article1', ]
+        urls = StopCoronaParser._get_url_list(all=False)
         self.assertListEqual(urls, expected_urls)
 
     def test_parse_page(self):
@@ -103,22 +106,23 @@ class StopCoronaParserTestCase(TestCase):
 
     def test_get_dates(self):
         tests_data = ["<html><body><h3> По состоянию за 44 нед. 2023 г. (23.10 - 29.10.2023)</h3></body></html>",
-                      "<html><body><h3> По состоянию за 44 нед. 2023 г. (23.11 - 29.10.2023)</h3></body></html>",
+                      "<html><body><h3> По состоянию за 44 нед. 2023 г. (23.10.2023 - 29.10.2023)</h3></body></html>",
+                      "<html><body><h3> По состоянию за 44 нед. 2023 г. (23.10. - 29.10.2023)</h3></body></html>",
                       "<html><body><h3> По состоянию за 44 нед. 2023 г. (4423.11 - 29.10.2023)</h3></body></html>"]
 
-        expected_urls = [[datetime.strptime('23.10.2023', '%d.%m.%Y').date(),
-                          datetime.strptime('29.10.2023', '%d.%m.%Y').date()],
-
-                         [datetime.strptime('23.11.2022', '%d.%m.%Y').date(),
-                          datetime.strptime('29.10.2023', '%d.%m.%Y').date()],
-
-                         None]
+        expected_dates = [[datetime.strptime('23.10.2023', '%d.%m.%Y').date(),
+                           datetime.strptime('29.10.2023', '%d.%m.%Y').date()],
+                          [datetime.strptime('23.10.2023', '%d.%m.%Y').date(),
+                           datetime.strptime('29.10.2023', '%d.%m.%Y').date()],
+                          [datetime.strptime('23.10.2023', '%d.%m.%Y').date(),
+                           datetime.strptime('29.10.2023', '%d.%m.%Y').date()],
+                          None]
 
         soup = [BeautifulSoup(tests_data[0], 'lxml'), BeautifulSoup(tests_data[1], 'lxml')]
 
         for i in range(2):
             urls = StopCoronaParser._get_dates(soup[i])
-            self.assertEqual(urls, expected_urls[i])
+            self.assertEqual(urls, expected_dates[i])
 
     def test_clean_table_data(self):
         tests_data = "[<td>Наименование субъекта</td>,<td>hospitalized</td>,<td>recovered</td>,<td>infected</td>,<td>deaths</td>,<td>Region 1</td>, <td>10</td>, <td>5</td>, <td>20</td>, <td>2</td>]"

@@ -9,7 +9,7 @@ class Command(BaseCommand):
     help = "imports data from объясняем.рф/stopcoronavirus"
 
     def add_arguments(self, parser):
-        parser.add_argument("all", type=int, help='0-latest information, 1-full available information',choices=(0, 1),
+        parser.add_argument("all", type=int, help='0-latest information, 1-full available information', choices=(0, 1),
                             default=0, nargs='?')
 
     def handle(self, *args, **options):
@@ -22,11 +22,8 @@ class Command(BaseCommand):
         self.upload_to_db(parsed_data)
 
     def get_parsed_data(self):
-        parser = StopCoronaParser()
-
-        if self.all:
-            return parser.get_all()
-        return parser.get_latest()
+        parser = StopCoronaParser(all=self.all)
+        return parser.get_parsed_data()
 
     def upload_to_db(self, data):
         uploaded = set(StopCoronaData.objects.values_list('start_date', 'end_date', 'region'))

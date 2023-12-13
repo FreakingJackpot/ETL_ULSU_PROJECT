@@ -42,7 +42,7 @@ class ExternalDatabaseStatistic(models.Model):
 
 
 class CsvData(models.Model):
-    date = models.DateField(auto_now=False)
+    date = models.DateField(auto_now=False, unique=True)
     cases = models.IntegerField(null=True)
     deaths = models.IntegerField(null=True)
     per_100000_cases_for_2_weeks = models.FloatField(null=True, blank=True)

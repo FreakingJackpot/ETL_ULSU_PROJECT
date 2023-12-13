@@ -1,6 +1,14 @@
+import re
+from datetime import datetime
+from functools import partial
 from unittest.mock import patch
+
+from bs4 import BeautifulSoup
+from django.conf import settings
 from django.test import TestCase
-from apps.etl.utils.parsers.gogov_parser import *
+
+from apps.etl.utils.parsers.gogov_parser import convert_int_str_to_int, convert_str_to_date, GogovParser
+
 
 class GogovTestCase(TestCase):
 
@@ -57,23 +65,23 @@ class GogovTestCase(TestCase):
         self.assertEqual(result, None)
 
     def test_parse_global_data(self):
-
-        soup = BeautifulSoup(open('./etl/tests_data/global_data.text', 'r', encoding='utf-8').read(), 'html.parser')
+        global_data = open(settings.BASE_DIR.joinpath('apps/etl/tests_data/global_data.text'), 'r', encoding='utf-8')
+        soup = BeautifulSoup(global_data.read(), 'html.parser')
         global_data = self.parser._parse_global_data(soup)
 
         expected_data = {
-                'date': datetime.strptime('25.11.2023', '%d.%m.%Y').date(),
-                'first_component': 89081596,
-                'full_vaccinated': 79702396,
-                'children_vaccinated': 202961,
-                'need_revaccination': 79699284,
-                'revaccinated': 20829310,
-            }
+            'date': datetime.strptime('25.11.2023', '%d.%m.%Y').date(),
+            'first_component': 89081596,
+            'full_vaccinated': 79702396,
+            'children_vaccinated': 202961,
+            'need_revaccination': 79699284,
+            'revaccinated': 20829310,
+        }
         self.assertEqual(global_data, expected_data)
 
     def test_get_regions_data(self):
-
-        soup = BeautifulSoup(open('./etl/tests_data/regions_data.text', 'r').read(), 'html.parser')
+        test_data = open(settings.BASE_DIR.joinpath('apps/etl/tests_data/regions_data.text'), 'r', encoding='cp1251')
+        soup = BeautifulSoup(test_data.read(), 'html.parser')
         soup = soup.find('tbody')
         regions_data = self.parser._get_regions_data(soup)
 
@@ -90,8 +98,9 @@ class GogovTestCase(TestCase):
         self.assertEqual(regions_data, expected_data)
 
     def test_parse_page(self):
-
-        result = self.parser._parse_page(open('./etl/tests_data/global_region_data.text', 'r').read())
+        test_data = open(settings.BASE_DIR.joinpath('apps/etl/tests_data/global_region_data.text'), 'r',
+                         encoding='cp1251')
+        result = self.parser._parse_page(test_data.read())
 
         global_data = {
             'date': datetime.strptime('25.11.2023', '%d.%m.%Y').date(),
@@ -118,9 +127,3 @@ class GogovTestCase(TestCase):
         }
 
         self.assertEqual(result, parsed_data)
-
-
-
-
-
-

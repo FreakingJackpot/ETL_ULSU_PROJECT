@@ -9,8 +9,8 @@ class Command(BaseCommand):
     help = "imports data from объясняем.рф/stopcoronavirus"
 
     def add_arguments(self, parser):
-        parser.add_argument("all", type=int, help='0-latest information, 1-full available information', default=0,
-                            choices=(0, 1))
+        parser.add_argument("all", type=int, help='0-latest information, 1-full available information',choices=(0, 1),
+                            default=0, nargs='?')
 
     def handle(self, *args, **options):
         self.all = options["all"]

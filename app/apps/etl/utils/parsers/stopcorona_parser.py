@@ -13,6 +13,7 @@ class StopCoronaParser:
     _max_page = settings.MAX_STOPCORONA_PAGE
 
     _region_fields = ['start_date', 'end_date', 'region', 'hospitalized', 'recovered', 'infected', 'deaths']
+    _date_matching_pattern = r"\d+\.?\d*\.? - \d+\.?\d*|\d+\.?\d*- \d+\.?\d*|\d+\.?\d*\.\d{4} *– *\d+\.?\d*\.\d{4}"
     _date_format = '%d.%m.%Y'
 
     def __init__(self):
@@ -52,16 +53,16 @@ class StopCoronaParser:
 
     @classmethod
     def _parse_page(cls, src):
-        soup = BeautifulSoup(src, 'lxml')
+        soup = BeautifulSoup(src, 'html5lib')
 
         detail__body = soup.find("div", class_="article-detail__body")
-
-        tbody = detail__body.find("tbody")
-        table_data = tbody.find_all("td")
 
         dates = cls._get_dates(detail__body)
         if not dates:
             return None
+
+        tbody = detail__body.find("tbody")
+        table_data = tbody.find_all("td")
 
         table_data = cls._clean_table_data(table_data)
 
@@ -71,22 +72,33 @@ class StopCoronaParser:
 
     @classmethod
     def _get_dates(cls, detail__body):
-        data = detail__body.find("h3").text
-        matches = re.findall(r"\d+\.?\d*\.? - \d+\.?\d*|\d+\.?\d*- \d+\.?\d*", data)
-        dates = matches[0].split('-')
-
-        current_year = datetime.now().year
-
-        try:
-            if int(dates[0].split('.')[1].strip()) > int(dates[1].split('.')[1].strip()):
-                dates[0] = datetime.strptime(dates[0].strip() + f'.{current_year - 1}', cls._date_format).date()
-            else:
-                dates[0] = datetime.strptime(dates[0].strip() + f'.{current_year}', cls._date_format).date()
-
-            dates[1] = datetime.strptime(dates[1].strip() + f'.{current_year}', cls._date_format).date()
-        except ValueError:
-            print(f"Invalid date format: {dates}")
+        date_text = detail__body.find("h3").text
+        matches = re.findall(cls._date_matching_pattern, date_text)
+        if len(matches) != 1:
+            print({'error': f'Can\'t get date from text. No matching pattern.', 'date_text': date_text})
             return
+
+        dates = re.split('-|–', matches[0])
+        if len(dates) != 2:
+            print({'error': f'Can\'t split dates properly. No matching pattern.', 'dates': dates})
+            return
+
+        if len(dates[0].split('.')) == 3:
+            dates[0], dates[1] = (datetime.strptime(dates[0], cls._date_format),
+                                  datetime.strptime(dates[1], cls._date_format))
+        else:
+            current_year = datetime.now().year
+
+            try:
+                if int(dates[0].split('.')[1].strip()) > int(dates[1].split('.')[1].strip()):
+                    dates[0] = datetime.strptime(dates[0].strip() + f'.{current_year - 1}', cls._date_format).date()
+                else:
+                    dates[0] = datetime.strptime(dates[0].strip() + f'.{current_year}', cls._date_format).date()
+
+                dates[1] = datetime.strptime(dates[1].strip() + f'.{current_year}', cls._date_format).date()
+            except ValueError:
+                print(f"Invalid date format: {dates}")
+                return
 
         return dates
 

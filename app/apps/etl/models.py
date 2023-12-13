@@ -43,9 +43,9 @@ class ExternalDatabaseStatistic(models.Model):
 
 class CsvData(models.Model):
     date = models.DateField(auto_now=False)
-    cases = models.IntegerField(default=True)
-    deaths = models.IntegerField(default=True)
-    days_14_cases_per_100000 = models.FloatField(default=True, null=True, blank=True)
+    cases = models.IntegerField(null=True)
+    deaths = models.IntegerField(null=True)
+    per_100000_cases_for_2_weeks = models.FloatField(null=True, blank=True)
 
 
 class StopCoronaData(models.Model):

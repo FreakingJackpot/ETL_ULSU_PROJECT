@@ -2,9 +2,9 @@ import re
 from datetime import datetime
 from itertools import chain
 
-from django.conf import settings
-from bs4 import BeautifulSoup
 import requests
+from bs4 import BeautifulSoup
+from django.conf import settings
 
 
 class StopCoronaParser:

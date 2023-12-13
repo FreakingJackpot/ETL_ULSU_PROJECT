@@ -1,7 +1,9 @@
-from unittest import TestCase
 from datetime import datetime
-from apps.etl.models import StopCoronaData
+from unittest import TestCase
+
 from apps.etl.management.commands.import_stopcorona_data import Command
+from apps.etl.models import StopCoronaData
+
 
 class ImportStopcoronaDataTestCase(TestCase):
 

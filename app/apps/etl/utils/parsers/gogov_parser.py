@@ -2,9 +2,9 @@ import re
 from datetime import datetime
 from functools import partial
 
-from django.conf import settings
-from bs4 import BeautifulSoup
 import requests
+from bs4 import BeautifulSoup
+from django.conf import settings
 from requests.status_codes import codes as status_codes
 
 

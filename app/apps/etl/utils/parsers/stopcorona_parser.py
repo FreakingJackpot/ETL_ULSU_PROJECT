@@ -15,6 +15,11 @@ class StopCoronaParser:
     _date_matching_pattern = r"\d+\.\d+\.\d{4} *[-–] *\d+\.?\d+\.\d{4}|\d+\.?\d+\.? *[-–] *\d+\.?\d+\.\d{4}"
     _date_format = '%d.%m.%Y'
 
+    _excluded_regions = ('Центральный федеральный округ', 'Южный федеральный округ', 'Уральский федеральный округ',
+                         'Сибирский федеральный округ', 'Северо-Кавказский федеральный округ',
+                         'Северо-Западный федеральный округ', 'Приволжский федеральный округ',
+                         'Дальневосточный федеральный округ')
+
     def __init__(self, all=False):
         self.url_list = self._get_url_list(all)
 
@@ -146,6 +151,8 @@ class StopCoronaParser:
             dict(zip(cls._region_fields, chain(dates, table_data[i:i + 5])))
             for i in range(0, len(table_data), 5)
         ]
+
+        regions_data = list(filter(lambda x: x['region'] not in cls._excluded_regions, regions_data))
 
         return regions_data
 

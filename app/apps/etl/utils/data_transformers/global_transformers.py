@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import csv
-import json
 from datetime import timedelta
 
 import pandas as pd
@@ -158,11 +156,11 @@ class GlobalDataTransformer:
     def _add_cumulative_stats(cls, resulted_df):
         latest_global_record = GlobalTransformedData.objects.latest('end_date')
 
-        resulted_df['infected'][0] = latest_global_record.infected + resulted_df[0].weekly_infected
-        resulted_df['recovered'][0] = latest_global_record.recovered + resulted_df[0].weekly_recovered
-        resulted_df['deaths'][0] = latest_global_record.deaths + resulted_df[0].weekly_deaths
+        resulted_df['infected'][0] = latest_global_record.infected + resulted_df['weekly_infected'][0]
+        resulted_df['recovered'][0] = latest_global_record.recovered + resulted_df['weekly_recovered'][0]
+        resulted_df['deaths'][0] = latest_global_record.deaths + resulted_df['weekly_deaths'][0]
 
         for i in range(1, len(resulted_df)):
-            resulted_df['infected'][i] = resulted_df[i - 1].infected + resulted_df[i].weekly_infected
-            resulted_df['recovered'][i] = resulted_df[i - 1].recovered + resulted_df[i].weekly_recovered
-            resulted_df['deaths'][i] = resulted_df[i - 1].deaths + resulted_df[i].weekly_deaths
+            resulted_df['infected'][i] = resulted_df['infected'][i - 1] + resulted_df['weekly_infected'][i]
+            resulted_df['recovered'][i] = resulted_df['recovered'][i - 1] + resulted_df['weekly_recovered'][i]
+            resulted_df['deaths'][i] = resulted_df['deaths'][i - 1] + resulted_df['weekly_deaths'][i]

@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Max
 
 
 class ExternalDatabaseVaccination(models.Model):
@@ -45,8 +46,12 @@ class ExternalDatabaseStatistic(models.Model):
         return f"{self.date} - {self.region}"
 
     @classmethod
-    def get_all_transform_data(cls):
-        return cls.objects.values('date', 'death_per_day', 'infection_per_day', 'recovery_per_day')
+    def get_all_transform_data(cls, with_region=False):
+        values_list = ['date', 'death_per_day', 'infection_per_day', 'recovery_per_day']
+        if with_region:
+            values_list.append('region')
+
+        return cls.objects.values(*values_list)
 
 
 class CsvData(models.Model):
@@ -61,6 +66,12 @@ class CsvData(models.Model):
 
 
 class StopCoronaData(models.Model):
+    RUSSIAN_FEDERATION = 'Российская Федерация'
+    EXCLUDED_REGIONS = ('Центральный федеральный округ', 'Южный федеральный округ', 'Уральский федеральный округ',
+                        'Сибирский федеральный округ', 'Северо-Кавказский федеральный округ',
+                        'Северо-Западный федеральный округ', 'Приволжский федеральный округ',
+                        'Дальневосточный федеральный округ')  # TODO Убрать после тестирования
+
     start_date = models.DateField()
     end_date = models.DateField()
     region = models.CharField(max_length=255)
@@ -77,19 +88,28 @@ class StopCoronaData(models.Model):
 
     @classmethod
     def get_transform_global_data(cls, latest):
-        query = cls.objects.filter(region='Российская Федерация')
+        query = cls.objects.filter(region=cls.RUSSIAN_FEDERATION)
         if latest:
-            object = query.latest('end_date')
+            object = query.latest('start_date')
             data = [{'start-date': object.start_date,
                      'end_date': object.end_date,
                      'infected': object.infected,
                      'recovered': object.recovered,
                      'deaths': object.deaths, }]
         else:
-            data = cls.objects.filter(region='Российская Федерация').values('start_date', 'end_date',
-                                                                            'infected', 'recovered', 'deaths')
+            data = query.values('start_date', 'end_date', 'infected', 'recovered', 'deaths')
 
         return data
+
+    @classmethod
+    def get_transform_region_data(cls, latest):
+        query = cls.objects.exclude(region=cls.RUSSIAN_FEDERATION).exclude(region__in=cls.EXCLUDED_REGIONS)
+        if latest:
+            latest_date = query.aggregate(latest_date=Max('start_date'))['latest_date']
+            query = query.filter(start_date=latest_date)
+
+        return query.order_by('start_date').values('start_date', 'end_date', 'region', 'infected', 'recovered',
+                                                   'deaths')
 
 
 class GogovGlobalData(models.Model):
@@ -109,8 +129,8 @@ class GogovGlobalData(models.Model):
 
 
 class GlobalTransformedData(models.Model):
-    start_date = models.DateField(unique=True)
-    end_date = models.DateField(unique=True)
+    start_date = models.DateField()
+    end_date = models.DateField()
     weekly_infected = models.IntegerField(null=True, blank=True)
     weekly_deaths = models.IntegerField(null=True, blank=True)
     weekly_recovered = models.IntegerField(null=True, blank=True)
@@ -129,3 +149,39 @@ class GlobalTransformedData(models.Model):
     weekly_deaths_infected_ratio = models.FloatField(null=True, blank=True)
     weekly_vaccinations_infected_ratio = models.FloatField(null=True, blank=True)
     vaccinations_population_ratio = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ['start-date', 'end_date', ]
+
+
+class RegionTransformedData(models.Model):
+    start_date = models.DateField()
+    end_date = models.DateField()
+    region = models.TextField()
+    weekly_infected = models.IntegerField(null=True, blank=True)
+    weekly_deaths = models.IntegerField(null=True, blank=True)
+    weekly_recovered = models.IntegerField(null=True, blank=True)
+    infected = models.IntegerField(null=True, blank=True)
+    deaths = models.IntegerField(null=True, blank=True)
+    recovered = models.IntegerField(null=True, blank=True)
+    first_component = models.IntegerField(null=True, blank=True)
+    second_component = models.IntegerField(null=True, blank=True)
+    weekly_infected_per_100000 = models.FloatField(null=True, blank=True)
+    weekly_deaths_per_100000 = models.FloatField(null=True, blank=True)
+    weekly_recovered_per_100000 = models.FloatField(null=True, blank=True)
+    infected_per_100000 = models.FloatField(null=True, blank=True)
+    deaths_per_100000 = models.FloatField(null=True, blank=True)
+    recovered_per_100000 = models.FloatField(null=True, blank=True)
+    weekly_recovered_infected_ratio = models.FloatField(null=True, blank=True)
+    weekly_deaths_infected_ratio = models.FloatField(null=True, blank=True)
+    weekly_vaccinations_infected_ratio = models.FloatField(null=True, blank=True)
+    vaccinations_population_ratio = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ['start-date', 'end_date', 'region']
+
+    @classmethod
+    def get_latest_data_map(cls):
+        latest_date = cls.objects.aggregate(latest_date=Max('start_date'))['latest_date']
+        items = cls.objects.filter(start_date=latest_date).values('infected', 'deaths', 'recovered')
+        return {itm['region']: itm for itm in items}

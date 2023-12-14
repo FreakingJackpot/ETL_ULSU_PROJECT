@@ -3,6 +3,17 @@ RF_POPULATION = 146447424
 
 class TransformingFunctions:
     @staticmethod
+    def add_cumulative_stats(df, region=False):
+        group_columns = ['region', 'start_date'] if region else ['start_date']
+        df['recovered'] = df.groupby(group_columns)['weekly_recovered'].cumsum()
+        df['deaths'] = df.groupby(group_columns)['weekly_deaths'].cumsum()
+        df['infected'] = df.groupby(group_columns)['weekly_infected'].cumsum()
+
+        if not region:
+            df['first_component'] = df.groupby(group_columns)['weekly_first_component'].cumsum()
+            df['second_component'] = df.groupby(group_columns)['weekly_second_component'].cumsum()
+
+    @staticmethod
     def add_per_100000_stats(df):
         def calculate_columns(row):
             columns = {
@@ -18,7 +29,7 @@ class TransformingFunctions:
         df.apply(lambda row: calculate_columns(row), axis=1, result_type='expand')
 
     @staticmethod
-    def add_ratio_stats(df):
+    def add_ratio_stats(df, region=False):
         def calculate_columns(row):
             columns = {
                 'weekly_recovered_infected_ratio': row['weekly_recovered'] / row['weekly_infected'],
@@ -26,20 +37,16 @@ class TransformingFunctions:
                 'weekly_vaccinations_infected_ratio': row['weekly_vaccinations'] / row['weekly_infected'],
                 'vaccinations_population_ratio': row['second_component'] / RF_POPULATION,
             }
+
+            if not region:
+                columns['vaccinations_population_ratio'] = row['second_component'] / RF_POPULATION
+
             return columns
 
         df.apply(lambda row: calculate_columns(row), axis=1, result_type='expand')
 
-    @staticmethod
-    def add_cumulative_stats(df):
-        df['recovered'] = df.groupby(['date'])['weekly_recovered'].cumsum()
-        df['deaths'] = df.groupby(['date'])['weekly_deaths'].cumsum()
-        df['infected'] = df.groupby(['date'])['weekly_infected'].cumsum()
-        df['first_component'] = df.groupby(['date'])['weekly_first_component'].cumsum()
-        df['second_component'] = df.groupby(['date'])['weekly_second_component'].cumsum()
-
     @classmethod
-    def apply_all_transforms(cls, df):
-        cls.add_cumulative_stats(df)
+    def apply_all_transforms(cls, df, region=False):
+        cls.add_cumulative_stats(df, region)
         cls.add_per_100000_stats(df)
-        cls.add_ratio_stats(df)
+        cls.add_ratio_stats(df, region)

@@ -51,3 +51,16 @@ scrape_configs:
         labels:
           job: varlogs
           __path__: /var/log/*log
+
+  - job_name: django-log-scraper
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          __path__: "/var/log/web/logs/*.log"
+          app: web
+      - targets:
+          - localhost
+        labels:
+          __path__: "/var/log/worker/logs/*.log"
+          app: worker

@@ -23,7 +23,6 @@ COPY ./app $APP_DIR
 
 RUN chown -R app:app $APP_DIR
 USER app
-
 #Ожидание подключения к postgres
 ENTRYPOINT ["/home/app/entrypoint.sh"]
 

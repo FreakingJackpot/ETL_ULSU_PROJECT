@@ -10,6 +10,8 @@ x-web-config: &web-config
   DB_HOST: ${DB_HOST}
   DB_PORT: ${DB_PORT}
   LOKI_HOST: ${LOKI_HOST}
+  TRACING_HOST: jaeger
+  TRACING_PORT: 6831
 
 x-airflow-config: &airflow-config
   <<: *web-config
@@ -42,8 +44,9 @@ x-airflow-base: &airflow-base
     dockerfile: ./airflow/Dockerfile
   restart: always
   volumes:
-      - ./airflow/dags:/dags
-      - ./app:/app
+    - ./airflow/dags:/dags
+    - airflow-logs:/opt/airflow/logs
+    - ./app:/app
 
 services:
   postgres:
@@ -81,13 +84,15 @@ services:
       dockerfile: ./app/Dockerfile
     container_name: web
     restart: always
-    command: uvicorn covid_dashboard.asgi:application --host 0.0.0.0 --port 8000
+    command: gunicorn covid_dashboard.wsgi:application --bind 0.0.0.0:8000
     expose:
       - 8000
     volumes:
       - static_volume:/home/app/web/static
+      - web-logs:/home/app/web/logs
     environment:
       <<: *web-config
+      SERVICE_NAME: web
 
     depends_on:
       - postgres
@@ -130,8 +135,12 @@ services:
     container_name: airflow-worker
     environment:
       <<: *airflow-config
+      SERVICE_NAME: worker
 
     command: -c " sleep 10 && /entrypoint celery worker"
+    volumes:
+      - ./airflow/dags:/dags
+      - worker-logs:/app/logs
 
     depends_on:
       - airflow
@@ -159,13 +168,29 @@ services:
     ports:
       - "3100:3100"
 
+    depends_on:
+      - promtail
+
   promtail:
     image: grafana/promtail:2.9.2
     container_name: promtail
     volumes:
       - ./loki/promtail.yml:/etc/promtail/config.yml
       - /var/run/docker.sock:/var/run/docker.sock
+      - web-logs:/var/log/web/logs
+      - worker-logs:/var/log/worker/logs
       - nginx_log:/var/log/nginx
+
+    depends_on:
+      - web
+      - worker
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    container_name: jaeger
+    ports:
+      - 16686:16686
+      - 6831:6831
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -298,3 +323,6 @@ volumes:
   prometheus_volume:
   grafana_data:
   nginx_log:
+  web-logs:
+  worker-logs:
+  airflow-logs:

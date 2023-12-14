@@ -12,7 +12,7 @@ default_args={'start_date': datetime.now()},
 )
 
 def run(ds, **kwargs):
-    from apps.etl.management.commands.import_gogov_data import Command
+    from apps.etl.management.commands.import_stopcorona_data import Command
     Command().handle()
 
 run_this = DjangoOperator(

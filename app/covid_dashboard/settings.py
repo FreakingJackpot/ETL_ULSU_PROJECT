@@ -101,6 +101,8 @@ USE_I18N = True
 
 USE_TZ = True
 
+ROOT_URLCONF = 'covid_dashboard.urls'
+
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'static'
 
@@ -110,30 +112,32 @@ CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
 LOGGING = {
     'version': 1,
-    "disable_existing_loggers": False,
+    'disable_existing_loggers': False,
     'formatters': {
-        'loki': {
-            'class': 'django_loki.LokiFormatter',
-            'format': '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] [%(funcName)s] %(message)s',
-            'datefmt': '%d-%m-%Y %H:%M:%S',
+        'trace_formatter': {
+            'format': '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s] [%(funcName)s] %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
         },
     },
     'handlers': {
-        'loki': {
+        'file': {
             'level': 'DEBUG',
-            'class': 'django_loki.LokiHttpHandler',
-            'host': env.str("LOKI_HOST", "loki"),
-            'formatter': 'loki',
-            'src_host': 'web',
+            'class': 'logging.FileHandler',
+            'formatter': 'trace_formatter',
+            'filename': 'logs/app.log',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'trace_formatter',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['loki', ],
+            'handlers': ['console', 'file'],
             'level': 'DEBUG',
-            'propagate': False,
+            'propagate': True,
         },
-    }
+    },
 }
 
 DEFAULT_CSV_PATH = str(BASE_DIR.joinpath('apps/etl/data/data.csv'))

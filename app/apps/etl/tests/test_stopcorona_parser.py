@@ -125,7 +125,8 @@ class StopCoronaParserTestCase(TestCase):
             self.assertEqual(urls, expected_dates[i])
 
     def test_clean_table_data(self):
-        tests_data = "[<td>Наименование субъекта</td>,<td>hospitalized</td>,<td>recovered</td>,<td>infected</td>,<td>deaths</td>,<td>Region 1</td>, <td>10</td>, <td>5</td>, <td>20</td>, <td>2</td>]"
+        tests_data = ("[<td>Наименование субъекта</td>,<td>hospitalized</td>,<td>recovered</td>,<td>infected</td>,"
+                      "<td>deaths</td>,<td>Region 1</td>, <td>10</td>, <td>5</td>, <td>20</td>, <td>2</td>]")
         soup = BeautifulSoup(tests_data, 'lxml')
         tests_data = soup.find_all("td")
         expected_urls = ['Region 1', 10, 5, 20, 2]
@@ -137,7 +138,8 @@ class StopCoronaParserTestCase(TestCase):
         tests_dates = [datetime.strptime('23.10.2023', '%d.%m.%Y').date(),
                        datetime.strptime('29.10.2023', '%d.%m.%Y').date()]
         expected_urls = [{'start_date': datetime.strptime('23.10.2023', '%d.%m.%Y').date(),
-                          'end_date': datetime.strptime('29.10.2023', '%d.%m.%Y').date(), 'region': 'Region 1',
+                          'end_date': datetime.strptime('29.10.2023', '%d.%m.%Y').date(),
+                          'region': 'Region 1',
                           'hospitalized': 10, 'recovered': 5, 'infected': 20, 'deaths': 2}]
         urls = StopCoronaParser._get_regions_data(tests_table_data, tests_dates)
         self.assertListEqual(urls, expected_urls)

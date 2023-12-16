@@ -77,6 +77,8 @@ services:
       POSTGRES_DB: ${EXTERNAL_DB_NAME}
     ports:
       - 5433:5433
+    command: -p 5433
+
 
   web:
     build:

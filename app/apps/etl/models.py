@@ -20,13 +20,14 @@ class ExternalDatabaseVaccination(models.Model):
 
     class Meta:
         managed = False
+        db_table = 'vactination'
 
     def __str__(self):
         return f"{self.date}"
 
     @classmethod
     def get_all_transform_data(cls):
-        return cls.objects.values('date', 'daily_people_vaccinated', 'daily_vaccinations')
+        return cls.objects.using('external_covid').values('date', 'daily_people_vaccinated', 'daily_vaccinations')
 
 
 class ExternalDatabaseStatistic(models.Model):
@@ -41,6 +42,7 @@ class ExternalDatabaseStatistic(models.Model):
 
     class Meta:
         managed = False
+        db_table = 'covid'
 
     def __str__(self):
         return f"{self.date} - {self.region}"
@@ -51,7 +53,7 @@ class ExternalDatabaseStatistic(models.Model):
         if with_region:
             values_list.append('region')
 
-        return cls.objects.values(*values_list)
+        return cls.objects.using('external_covid').values(*values_list)
 
 
 class CsvData(models.Model):
@@ -151,7 +153,11 @@ class GlobalTransformedData(models.Model):
     vaccinations_population_ratio = models.FloatField(null=True, blank=True)
 
     class Meta:
-        unique_together = ['start-date', 'end_date', ]
+        unique_together = ['start_date', 'end_date', ]
+
+    @classmethod
+    def get_latest_not_null_values(cls):
+        return cls.objects.aggregate(infected=Max('infected'), deaths=Max('deaths'), recovered=Max('recovered'))
 
 
 class RegionTransformedData(models.Model):
@@ -178,10 +184,12 @@ class RegionTransformedData(models.Model):
     vaccinations_population_ratio = models.FloatField(null=True, blank=True)
 
     class Meta:
-        unique_together = ['start-date', 'end_date', 'region']
+        unique_together = ['start_date', 'end_date', 'region']
 
     @classmethod
     def get_latest_data_map(cls):
-        latest_date = cls.objects.aggregate(latest_date=Max('start_date'))['latest_date']
-        items = cls.objects.filter(start_date=latest_date).values('infected', 'deaths', 'recovered')
+        items = (cls.objects
+                 .values('region')
+                 .aggregate(infected=Max('infected'), deaths=Max('deaths'), recovered=Max('recovered'))
+                 )
         return {itm['region']: itm for itm in items}

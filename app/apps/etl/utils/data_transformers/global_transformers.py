@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from datetime import timedelta
+from datetime import timedelta, date
 
 import pandas as pd
 
@@ -13,9 +13,9 @@ class LegacyGlobalDataTransformer:
     def run(cls):
         external_data_main, external_data_vaccinations, csv_data = cls._get_dataframes()
 
-        cls._transform_external_data_main(external_data_main)
-        cls._transform_external_data_vaccinations(external_data_vaccinations)
-        cls._transform_csv_data(csv_data)
+        external_data_main = cls._transform_external_data_main(external_data_main)
+        external_data_vaccinations = cls._transform_external_data_vaccinations(external_data_vaccinations)
+        csv_data = cls._transform_csv_data(csv_data)
 
         resulted_df = cls._prepare_resulted_df(external_data_main, external_data_vaccinations, csv_data)
 
@@ -36,42 +36,60 @@ class LegacyGlobalDataTransformer:
     @classmethod
     def _transform_external_data_main(cls, external_data_main):
         external_data_main = external_data_main.groupby("date").sum()
+        external_data_main.reset_index('date', inplace=True)
+
+        external_data_main['date'] = pd.to_datetime(external_data_main['date'])
         external_data_main = external_data_main.loc[external_data_main["date"] >= "2020-12-15"]
         external_data_main = external_data_main.resample('W-MON', on='date').sum()
+        external_data_main.reset_index('date', inplace=True)
+
         external_data_main.rename(
             columns={'death_per_day': 'weekly_deaths',
                      'infection_per_day': 'weekly_infected',
                      'recovery_per_day': 'weekly_recovered'}, inplace=True)
 
-    @classmethod
-    def _transform_csv_data(cls, csv_data):
-        csv_data = csv_data.resample('W-MON', on='date').sum()
-        csv_data.rename(columns={'cases': 'weekly_infected', 'deaths': 'weekly_deaths'}, inplace=True)
+        return external_data_main
 
     @classmethod
     def _transform_external_data_vaccinations(cls, external_data_vaccinations):
+        external_data_vaccinations['date'] = pd.to_datetime(external_data_vaccinations['date'])
         external_data_vaccinations = external_data_vaccinations.resample('W-MON', on='date').sum()
+        external_data_vaccinations.reset_index('date', inplace=True)
+
         external_data_vaccinations.rename(columns={'daily_vaccinations': 'weekly_vaccinations',
                                                    'daily_people_vaccinated': 'weekly_first_component',
                                                    }, inplace=True)
-        external_data_vaccinations['weekly_second_component'].apply(
+        external_data_vaccinations['weekly_second_component'] = external_data_vaccinations.apply(
             lambda row: row.weekly_vaccinations - row.weekly_first_component, axis=1)
+
+        return external_data_vaccinations
+
+    @classmethod
+    def _transform_csv_data(cls, csv_data):
+        csv_data['date'] = pd.to_datetime(csv_data['date'])
+        csv_data = csv_data.resample('W-MON', on='date').sum()
+        csv_data.reset_index('date', inplace=True)
+
+        csv_data.rename(columns={'cases': 'weekly_infected', 'deaths': 'weekly_deaths'}, inplace=True)
+
+        return csv_data
 
     @classmethod
     def _prepare_resulted_df(cls, external_data_main, external_data_vaccinations, csv_data):
         resulted_df = cls._merge_all_dfs(external_data_main, external_data_vaccinations, csv_data)
 
-        resulted_df['start_date'] = resulted_df.apply(lambda row: row.date - timedelta(days=6))
+        resulted_df['start_date'] = resulted_df.apply(lambda row: row.date - timedelta(days=6), axis=1)
         resulted_df.rename(columns={'date': 'end_date'}, inplace=True)
 
-        TransformingFunctions.apply_all_transforms(resulted_df)
+        resulted_df = TransformingFunctions.apply_all_transforms(resulted_df)
 
         return resulted_df
 
     @classmethod
     def _merge_all_dfs(cls, external_data_main, external_data_vaccinations, csv_data):
-        resulted_df = pd.concat([external_data_main, csv_data])
-        resulted_df = pd.merge(resulted_df, external_data_vaccinations, on='date', how='inner')
+        resulted_df = pd.concat([csv_data, external_data_main], ignore_index=True)
+        resulted_df['date'] = pd.to_datetime(resulted_df['date'])
+        resulted_df = pd.merge(resulted_df, external_data_vaccinations, on='date', how='left')
         resulted_df.sort_values(by='date', ascending=True, inplace=True)
 
         return resulted_df
@@ -135,8 +153,8 @@ class GlobalDataTransformer:
     @classmethod
     def _prepare_resulted_df(cls, stopcorona_data, gogov_data):
         resulted_df = cls._merge_all_dfs(stopcorona_data, gogov_data)
-        cls._apply_finale_transforms(resulted_df)
-        return resulted_df
+        transformed_resulted_df = cls._transform_resulted_df(resulted_df)
+        return transformed_resulted_df
 
     @classmethod
     def _merge_all_dfs(cls, stopcorona_data, gogov_data):
@@ -147,18 +165,19 @@ class GlobalDataTransformer:
         return resulted_df
 
     @classmethod
-    def _apply_finale_transforms(cls, resulted_df):
+    def _transform_resulted_df(cls, resulted_df):
         cls._add_cumulative_stats(resulted_df)
-        TransformingFunctions.add_per_100000_stats(resulted_df)
-        TransformingFunctions.add_ratio_stats(resulted_df)
+        resulted_df = TransformingFunctions.add_per_100000_stats(resulted_df)
+        resulted_df = TransformingFunctions.add_ratio_stats(resulted_df)
+        return resulted_df
 
     @classmethod
     def _add_cumulative_stats(cls, resulted_df):
-        latest_global_record = GlobalTransformedData.objects.latest('end_date')
+        latest_values = GlobalTransformedData.get_latest_not_null_values()
 
-        resulted_df['infected'][0] = latest_global_record.infected + resulted_df['weekly_infected'][0]
-        resulted_df['recovered'][0] = latest_global_record.recovered + resulted_df['weekly_recovered'][0]
-        resulted_df['deaths'][0] = latest_global_record.deaths + resulted_df['weekly_deaths'][0]
+        resulted_df['infected'][0] = latest_values['infected'] + resulted_df['weekly_infected'][0]
+        resulted_df['recovered'][0] = latest_values['recovered'] + resulted_df['weekly_recovered'][0]
+        resulted_df['deaths'][0] = latest_values['deaths'] + resulted_df['weekly_deaths'][0]
 
         for i in range(1, len(resulted_df)):
             resulted_df['infected'][i] = resulted_df['infected'][i - 1] + resulted_df['weekly_infected'][i]

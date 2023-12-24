@@ -25,6 +25,8 @@ INSTALLED_APPS = [
     'django_prometheus',
     'apps.etl',
     'apps.api',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
 ]
 
 MIDDLEWARE = [
@@ -93,6 +95,24 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework_xml.renderers.XMLRenderer',
+    ]
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Covid dashboard API',
+    'DESCRIPTION': 'API provides covid-19 data for BI systems',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_DIST': 'SIDECAR',  # shorthand to use the sidecar instead
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+}
+
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
@@ -107,34 +127,34 @@ STATIC_ROOT = BASE_DIR / 'static'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
-
-LOGGING = {
-    'version': 1,
-    "disable_existing_loggers": False,
-    'formatters': {
-        'loki': {
-            'class': 'django_loki.LokiFormatter',
-            'format': '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] [%(funcName)s] %(message)s',
-            'datefmt': '%d-%m-%Y %H:%M:%S',
-        },
-    },
-    'handlers': {
-        'loki': {
-            'level': 'DEBUG',
-            'class': 'django_loki.LokiHttpHandler',
-            'host': env.str("LOKI_HOST", "loki"),
-            'formatter': 'loki',
-            'src_host': 'web',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['loki', ],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-    }
-}
+#
+# LOGGING = {
+#     'version': 1,
+#     "disable_existing_loggers": False,
+#     'formatters': {
+#         'loki': {
+#             'class': 'django_loki.LokiFormatter',
+#             'format': '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] [%(funcName)s] %(message)s',
+#             'datefmt': '%d-%m-%Y %H:%M:%S',
+#         },
+#     },
+#     'handlers': {
+#         'loki': {
+#             'level': 'DEBUG',
+#             'class': 'django_loki.LokiHttpHandler',
+#             'host': env.str("LOKI_HOST", "loki"),
+#             'formatter': 'loki',
+#             'src_host': 'web',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['loki', ],
+#             'level': 'DEBUG',
+#             'propagate': False,
+#         },
+#     }
+# }
 
 DEFAULT_CSV_PATH = str(BASE_DIR.joinpath('apps/etl/data/data.csv'))
 STOPCORONA_URL_BASE = 'https://xn--90aivcdt6dxbc.xn--p1ai/{}'

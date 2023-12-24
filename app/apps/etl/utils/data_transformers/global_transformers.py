@@ -158,22 +158,14 @@ class GlobalDataTransformer:
                     ['daily_first_component', 'daily_second_component', 'daily_vaccinations']].sum()
                 latest_on_week = gogov_weekly_data[['first_component', 'second_component', 'date']].iloc[-1]
 
-                if (weekday := latest_on_week['date'].weekday()) == 6:
-                    end_date = latest_on_week['date']
-                else:
-                    end_date = latest_on_week['date'] + timedelta(days=6 - weekday)
-
-                start_date = gogov_weekly_data['date'].iloc[0]
-                start_date = start_date if start_date.weekday() == 0 else end_date - timedelta(days=end_date.weekday())
-
                 new_row = {
                     'weekly_vaccinations': weekly_data['daily_vaccinations'],
                     'weekly_first_component': weekly_data['daily_first_component'],
                     'weekly_second_component': weekly_data['daily_second_component'],
                     'first_component': latest_on_week['first_component'],
                     'second_component': latest_on_week['second_component'],
-                    'start_date': start_date,
-                    'end_date': end_date,
+                    'start_date': row.start_date,
+                    'end_date': row.end_date,
                 }
 
                 transformed_gogov_data.append(new_row)

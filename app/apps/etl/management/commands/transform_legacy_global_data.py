@@ -1,14 +1,12 @@
 from django.core.management.base import BaseCommand
-from django.db import DatabaseError
 
-from apps.etl.models import StopCoronaData
 from apps.etl.utils.data_transformers.global_transformers import LegacyGlobalDataTransformer
-from apps.etl.utils.parsers.stopcorona_parser import StopCoronaParser
+from apps.etl.utils.mappers.transformed_data_mappers import GlobalTransformedDataMapper
 
 
 class Command(BaseCommand):
-    help = "imports data from объясняем.рф/stopcoronavirus"
+    help = "transforms and writes legacy global data, data from external database, csv"
 
     def handle(self, *args, **options):
-        kek = LegacyGlobalDataTransformer.run()
-        print(1)
+        data = LegacyGlobalDataTransformer.run()
+        GlobalTransformedDataMapper().map(data)

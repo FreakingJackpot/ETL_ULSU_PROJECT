@@ -15,7 +15,7 @@ def convert_str_to_date(date_str, date_format):
 class GogovParser:
     _url = settings.GOGOV_URL
 
-    _global_spans = {1: "first_component", 2: "full_vaccinated", 3: "children_vaccinated", 6: "need_revaccination"}
+    _global_spans = {1: "first_component", 2: "second_component", 3: "children_vaccinated", 6: "need_revaccination"}
     _global_span_clean_function = partial(re.sub, " |чел.", "")
     _global_date_format = '%d.%m.%y'
 

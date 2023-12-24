@@ -32,7 +32,7 @@ class TestImportGogovData(TestCase):
         # Проверяем данные, загруженные в базу данных
         global_data_obj = GogovGlobalData.objects.get()
         self.assertEqual(global_data_obj.first_component, global_data['first_component'])
-        self.assertEqual(global_data_obj.full_vaccinated, global_data['full_vaccinated'])
+        self.assertEqual(global_data_obj.second_component, global_data['full_vaccinated'])
         self.assertEqual(global_data_obj.children_vaccinated, global_data['children_vaccinated'])
         self.assertEqual(global_data_obj.revaccinated, global_data['revaccinated'])
         self.assertEqual(global_data_obj.need_revaccination, global_data['need_revaccination'])

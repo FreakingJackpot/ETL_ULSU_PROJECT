@@ -1,12 +1,10 @@
 import pandas as pd
-import numpy as np
 
 RF_POPULATION = 146447424
 
 
 class TransformingFunctions:
-    _ratio_keys = (
-        'weekly_recovered_infected_ratio', 'weekly_deaths_infected_ratio', 'weekly_vaccinations_infected_ratio')
+    _default_ratio_keys = ('weekly_recovered_infected_ratio', 'weekly_deaths_infected_ratio',)
 
     @staticmethod
     def add_cumulative_stats(df, region=False):
@@ -40,17 +38,21 @@ class TransformingFunctions:
     @classmethod
     def add_ratio_stats(cls, df, region=False):
         def calculate_columns(row):
-            columns = dict.fromkeys(cls._ratio_keys, np.nan)
+            columns = dict.fromkeys(cls._default_ratio_keys, None)
 
             if row.weekly_infected:
                 columns = {
                     'weekly_recovered_infected_ratio': row.weekly_recovered / row.weekly_infected,
                     'weekly_deaths_infected_ratio': row.weekly_deaths / row.weekly_infected,
-                    'weekly_vaccinations_infected_ratio': row.weekly_vaccinations / row.weekly_infected,
                 }
 
             if not region:
                 columns['vaccinations_population_ratio'] = row.second_component / RF_POPULATION
+
+                if row.weekly_infected:
+                    columns['weekly_vaccinations_infected_ratio'] = row.weekly_vaccinations / row.weekly_infected
+                else:
+                    columns['weekly_vaccinations_infected_ratio'] = None
 
             return columns
 
@@ -64,5 +66,4 @@ class TransformingFunctions:
         cls.add_cumulative_stats(df, region)
         df = cls.add_per_100000_stats(df)
         df = cls.add_ratio_stats(df, region)
-
         return df

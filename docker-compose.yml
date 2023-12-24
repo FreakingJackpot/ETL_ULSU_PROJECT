@@ -83,7 +83,7 @@ services:
       dockerfile: ./app/Dockerfile
     container_name: web
     restart: always
-    command: uvicorn covid_dashboard.asgi:application --host 0.0.0.0 --port 8000
+    command: gunicorn covid_dashboard.asgi:application --host 0.0.0.0 --port 8000
     expose:
       - 8000
     volumes:

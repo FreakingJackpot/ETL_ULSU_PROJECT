@@ -108,34 +108,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
-LOGGING = {
-    'version': 1,
-    "disable_existing_loggers": False,
-    'formatters': {
-        'loki': {
-            'class': 'django_loki.LokiFormatter',
-            'format': '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] [%(funcName)s] %(message)s',
-            'datefmt': '%d-%m-%Y %H:%M:%S',
-        },
-    },
-    'handlers': {
-        'loki': {
-            'level': 'DEBUG',
-            'class': 'django_loki.LokiHttpHandler',
-            'host': env.str("LOKI_HOST", "loki"),
-            'formatter': 'loki',
-            'src_host': 'web',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['loki', ],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-    }
-}
-
 DEFAULT_CSV_PATH = str(BASE_DIR.joinpath('apps/etl/data/data.csv'))
 STOPCORONA_URL_BASE = 'https://xn--90aivcdt6dxbc.xn--p1ai/{}'
 STOPCORONA_URL_ARTICLES_PAGE = STOPCORONA_URL_BASE.format('stopkoronavirus/?isAjax=Y&action=itemsMore&PAGEN_1={}')

@@ -110,36 +110,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'trace_formatter': {
-            'format': '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s] [%(funcName)s] %(message)s',
-            'datefmt': '%Y-%m-%d %H:%M:%S',
-        },
-    },
-    'handlers': {
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'formatter': 'trace_formatter',
-            'filename': 'logs/app.log',
-        },
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'trace_formatter',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-    },
-}
-
 DEFAULT_CSV_PATH = str(BASE_DIR.joinpath('apps/etl/data/data.csv'))
 STOPCORONA_URL_BASE = 'https://xn--90aivcdt6dxbc.xn--p1ai/{}'
 STOPCORONA_URL_ARTICLES_PAGE = STOPCORONA_URL_BASE.format('stopkoronavirus/?isAjax=Y&action=itemsMore&PAGEN_1={}')

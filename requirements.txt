@@ -28,6 +28,7 @@ oauthlib==3.2.2
 openpyxl==3.1.2
 packaging==23.2
 pandas
+pip-chill==1.0.3
 prometheus-client==0.19.0
 psycopg==3.1.13
 psycopg-binary==3.1.13

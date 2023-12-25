@@ -19,7 +19,7 @@ class Command(BaseCommand):
         parsed_data = self.get_parsed_data()
         self.stdout.write(f"Parsed {len(parsed_data)} elements")
 
-        self.upload_to_db(parsed_data)
+        return bool(self.upload_to_db(parsed_data))
 
     def get_parsed_data(self):
         parser = StopCoronaParser(all=self.all)
@@ -39,3 +39,5 @@ class Command(BaseCommand):
             return
 
         self.stdout.write("Upload complete")
+
+        return len(objects)

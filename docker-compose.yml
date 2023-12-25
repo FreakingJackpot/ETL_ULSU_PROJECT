@@ -42,8 +42,8 @@ x-airflow-base: &airflow-base
     dockerfile: ./airflow/Dockerfile
   restart: always
   volumes:
-      - ./airflow/dags:/dags
-      - ./app:/app
+    - ./airflow/dags:/dags
+    - ./app:/app
 
 services:
   postgres:
@@ -83,7 +83,7 @@ services:
       dockerfile: ./app/Dockerfile
     container_name: web
     restart: always
-    command: gunicorn covid_dashboard.asgi:application --host 0.0.0.0 --port 8000
+    command: gunicorn covid_dashboard.wsgi:application --bind 0.0.0.0:8000
     expose:
       - 8000
     volumes:

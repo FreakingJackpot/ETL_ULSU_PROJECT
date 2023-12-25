@@ -155,16 +155,24 @@ class GlobalTransformedData(models.Model):
         unique_together = ['start_date', 'end_date', ]
 
     @classmethod
-    def get_latest_not_null_values(cls, latest):
-        queryset = cls.objects
+    def get_highest_not_null_values(cls, latest):
+        vaccinations_queryset = cls.objects
+        main_stats_queryset = cls.objects
         gogov_earliest = GogovGlobalData.objects.earliest('date')
         stopcorona_earliest = StopCoronaData.objects.earliest('start_date')
 
-        if not latest and gogov_earliest and stopcorona_earliest:
-            queryset = queryset.filter(end_date__lt=gogov_earliest.date, start_date__lt=stopcorona_earliest.start_date)
+        if not latest:
+            if gogov_earliest:
+                vaccinations_queryset = vaccinations_queryset.filter(end_date__lt=gogov_earliest.date)
+            if stopcorona_earliest:
+                main_stats_queryset = main_stats_queryset.filter(end_date__lt=stopcorona_earliest.start_date)
 
-        return queryset.aggregate(infected=Max('infected'), deaths=Max('deaths'), recovered=Max('recovered'),
-                                  first_component=Max('first_component'), second_component=Max('second_component'))
+        data = main_stats_queryset.aggregate(infected=Max('infected'), deaths=Max('deaths'), recovered=Max('recovered'))
+        vaccinations_data = vaccinations_queryset.aggregate(first_component=Max('first_component'),
+                                                            second_component=Max('second_component'))
+        data.update(vaccinations_data)
+
+        return data
 
 
 class RegionTransformedData(models.Model):

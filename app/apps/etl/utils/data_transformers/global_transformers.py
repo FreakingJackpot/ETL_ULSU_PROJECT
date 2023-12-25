@@ -103,7 +103,7 @@ class LegacyGlobalDataTransformer:
 class GlobalDataTransformer:
     def __init__(self, latest=False):
         self.latest = latest
-        self.latest_values = GlobalTransformedData.get_latest_not_null_values(latest)
+        self.latest_values = GlobalTransformedData.get_highest_not_null_values(latest)
 
     def run(self):
         stopcorona_data, gogov_data = self._get_dataframes()

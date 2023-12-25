@@ -4,11 +4,19 @@ x-web-config: &web-config
   DJANGO_DEBUG: ${DJANGO_DEBUG}
   DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
   DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS}
+
   DB_NAME: ${DB_NAME}
   DB_USER: ${DB_USER}
   DB_PASS: ${DB_PASS}
   DB_HOST: ${DB_HOST}
   DB_PORT: ${DB_PORT}
+
+  EXTERNAL_DB_NAME: ${EXTERNAL_DB_NAME}
+  EXTERNAL_DB_USER: ${EXTERNAL_DB_USER}
+  EXTERNAL_DB_PASS: ${EXTERNAL_DB_PASS}
+  EXTERNAL_DB_HOST: ${EXTERNAL_DB_HOST}
+  EXTERNAL_DB_PORT: ${EXTERNAL_DB_PORT}
+
   LOKI_HOST: ${LOKI_HOST}
 
 x-airflow-config: &airflow-config
@@ -16,6 +24,7 @@ x-airflow-config: &airflow-config
   AIRFLOW__CORE__DAGS_FOLDER: /dags
   AIRFLOW__CORE__EXECUTOR: CeleryExecutor
   AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
   AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql://airflow:${DB_AIRFLOW_PASS}@postgres:5432/airflow
 
   AIRFLOW__CORE__PARALLELISM: ${AIRFLOW_PARALLELISM}
@@ -23,6 +32,7 @@ x-airflow-config: &airflow-config
   AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG: ${AIRFLOW_MAX_ACTIVE_RUNS_PER_DAG}
   AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW_CORE_LOAD_EXAMPLES}
   AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS: ${AIRFLOW_CORE_LOAD_DEFAULT_CONNECTIONS}
+  AIRFLOW__CORE__DEFAULT_TIMEZONE: 'Europe/Moscow'
 
   AIRFLOW__EMAIL__DEFAULT_EMAIL_ON_RETRY: ${AIRFLOW_EMAIL_DEFAULT_EMAIL_ON_RETRY}
   AIRFLOW__EMAIL__DEFAULT_EMAIL_ON_FAILURE: ${AIRFLOW_EMAIL_DEFAULT_EMAIL_ON_FAILURE}
@@ -36,6 +46,14 @@ x-airflow-config: &airflow-config
   AIRFLOW__SCHEDULER__STATSD_PORT: 8125
   AIRFLOW__SCHEDULER__STATSD_PREFIX: airflow
 
+  AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+  AIRFLOW__WEBSERVER__WEB_SERVER_PORT: 8081
+
+  AIRFLOW__LOGGING__BASE_LOG_FOLDER: "/opt/airflow/logs"
+  AIRFLOW__LOGGING__LOGGING_LEVEL: "INFO" # DEBUG, INFO, WARNING, ERROR or CRITICAL.
+  AIRFLOW__LOGGING__FAB_LOGGING_LEVEL: "WARNING"
+  AIRFLOW__LOGGING__LOG_FORMAT: "%(message)s"
+
 x-airflow-base: &airflow-base
   build:
     context: ./
@@ -44,12 +62,18 @@ x-airflow-base: &airflow-base
   volumes:
     - ./airflow/dags:/dags
     - ./app:/app
+    - ./airflow/logs:/opt/airflow/logs
+  depends_on:
+    &airflow-common-depends-on
+    redis:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy
 
 services:
   postgres:
     image: postgres
     container_name: postgres
-    restart: always
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
@@ -63,6 +87,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
       - ./postgres:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "airflow", "&","pg_isready","-U", "$DB_USER", "--dbname", "DB_NAME" ]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
 
   external_postgres:
     image: freakingjackpot/etl_project:external_database
@@ -97,6 +127,13 @@ services:
   redis:
     container_name: redis
     image: redis:7.2.3-alpine
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 30s
+    restart: always
 
   airflow:
     <<: *airflow-base
@@ -139,6 +176,9 @@ services:
       - airflow
       - postgres
       - redis
+
+    ports:
+      - 8793:8793
 
   nginx:
     build: ./nginx

@@ -156,3 +156,4 @@ cython_debug/
 .idea/
 
 /loki/data/
+/airflow/logs/

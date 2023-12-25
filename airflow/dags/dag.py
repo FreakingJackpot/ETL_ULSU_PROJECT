@@ -101,19 +101,19 @@ def etl_data_dag_template(latest):
     chain([transform_global_data_task, transform_region_data_task], [load_global_data_task, load_region_data_task])
 
 
-@dag(dag_id='etl_data_full', start_date=datetime.now(), description='ETL process for all non legacy data',
+@dag(dag_id='etl_data_full', start_date=datetime(2023, 1, 1), description='ETL process for all non legacy data',
      schedule_interval="@monthly", render_template_as_native_obj=True, )
 def etl_data_full():
     etl_data_dag_template(False)
 
 
-@dag(dag_id='etl_data_latest', start_date=datetime.now(), description='ETL process for latest non legacy data',
+@dag(dag_id='etl_data_latest', start_date=datetime(2023, 1, 1), description='ETL process for latest non legacy data',
      schedule_interval="0 20 * * 7", render_template_as_native_obj=True, )
 def etl_data_latest():
     etl_data_dag_template(True)
 
 
-@dag(dag_id='import_external_data', start_date=datetime.now(), description='ETL process for external sources data',
+@dag(dag_id='import_external_data', start_date=datetime(2023, 1, 1), description='ETL process for external sources data',
      schedule_interval="00 18 * * *", render_template_as_native_obj=True, )
 def import_external_data():
     def gogov_import():

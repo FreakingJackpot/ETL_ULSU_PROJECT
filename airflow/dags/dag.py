@@ -108,7 +108,7 @@ def etl_data_full():
 
 
 @dag(dag_id='etl_data_latest', start_date=datetime(2023, 1, 1), description='ETL process for latest non legacy data',
-     schedule_interval="0 20 * * 7", render_template_as_native_obj=True, )
+     schedule_interval="0 20 * * 2", render_template_as_native_obj=True, )
 def etl_data_latest():
     etl_data_dag_template(True)
 

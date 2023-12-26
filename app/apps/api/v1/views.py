@@ -1,45 +1,109 @@
-from rest_framework import generics
+from rest_framework import generics, status,permissions
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse, \
+    PolymorphicProxySerializer
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.settings import api_settings
 from rest_framework_csv import renderers as r
-from knox.models import AuthToken
-from knox.auth import TokenAuthentication
-from django.contrib.auth.signals import user_logged_in
+from rest_framework_simplejwt.views import (
+    TokenBlacklistView,
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView,
+)
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from .serializers import UserSerializer, DatasetInfoSerializer, DatasetRequestSerializer
+from .serializers import (TokenObtainPairResponseSerializer, TokenRefreshResponseSerializer,
+                          Response401InvalidOrExpiredSerializer, Response401BlacklistedSerializer,
+                          Response401NoAccountOrWrongCredentialsSerializer, DatasetInfoSerializer,
+                          DatasetRequestSerializer)
 from apps.api.models import DatasetInfo
 from apps.etl.models import RegionTransformedData
 
 
-class LoginAPI(generics.GenericAPIView):
-    serializer_class = UserSerializer
-    authentication = [TokenAuthentication]
-
+class DecoratedTokenObtainPairView(TokenObtainPairView):
+    @extend_schema(
+        responses={
+            status.HTTP_200_OK: TokenObtainPairResponseSerializer,
+            status.HTTP_401_UNAUTHORIZED: Response401NoAccountOrWrongCredentialsSerializer,
+        }
+    )
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data
-        AuthToken.objects.filter(user=user).delete()  # удаление старых токенов
-        _, token = AuthToken.objects.create(user)
-        user_logged_in.send(sender=user.__class__, request=request, user=user)  # отправка о входе
-        return Response({
-            "user": UserSerializer(user, context=self.get_serializer_context()).data,
-            "token": token
-        })
+        return super().post(request, *args, **kwargs)
+
+
+class DecoratedTokenRefreshView(TokenRefreshView):
+    @extend_schema(
+        responses={
+            status.HTTP_200_OK: TokenRefreshResponseSerializer,
+            status.HTTP_401_UNAUTHORIZED: PolymorphicProxySerializer(
+                component_name='MetaError', resource_type_field_name='error_type',
+                serializers=[Response401InvalidOrExpiredSerializer, Response401BlacklistedSerializer]
+            ),
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+
+class DecoratedTokenBlacklistView(TokenBlacklistView):
+    @extend_schema(
+        responses={
+            status.HTTP_401_UNAUTHORIZED: PolymorphicProxySerializer(
+                component_name='MetaError', resource_type_field_name='error_type',
+                serializers=[Response401InvalidOrExpiredSerializer, Response401BlacklistedSerializer]
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+
+class DecoratedTokenVerifyView(TokenVerifyView):
+    @extend_schema(
+        responses={
+            status.HTTP_401_UNAUTHORIZED: PolymorphicProxySerializer(
+                component_name='MetaError', resource_type_field_name='error_type',
+                serializers=[Response401InvalidOrExpiredSerializer, Response401BlacklistedSerializer]
+            ),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 
 class DatasetsInfo(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication, ]
     queryset = DatasetInfo.objects.all()
     serializer_class = DatasetInfoSerializer
 
+    @extend_schema(
+        responses={
+            status.HTTP_200_OK: DatasetInfoSerializer(many=True),
+            status.HTTP_401_UNAUTHORIZED: PolymorphicProxySerializer(
+                component_name='MetaError', resource_type_field_name='error_type',
+                serializers=[Response401InvalidOrExpiredSerializer, Response401BlacklistedSerializer]
+            ),
+        },
+    )
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
 
 class Dataset(generics.ListAPIView):
-    renderer_classes = (r.CSVRenderer,) + tuple(api_settings.DEFAULT_RENDERER_CLASSES)
+    renderer_classes = tuple(api_settings.DEFAULT_RENDERER_CLASSES) + (r.CSVRenderer,)
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication, ]
 
     @extend_schema(
-        responses={200: [{}, ]},
+        responses={
+            status.HTTP_200_OK: [{}, ],
+            status.HTTP_401_UNAUTHORIZED: PolymorphicProxySerializer(
+                component_name='MetaError', resource_type_field_name='error_type',
+                serializers=[Response401InvalidOrExpiredSerializer, Response401BlacklistedSerializer]
+            ),
+        },
         parameters=[
             OpenApiParameter(name='fields', description='comma separated list of fields', required=False, type=str),
             OpenApiParameter(name='regions', description='comma separated list of regions', required=False, type=str),

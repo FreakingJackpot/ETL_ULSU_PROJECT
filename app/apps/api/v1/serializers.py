@@ -1,14 +1,60 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
 
 from apps.api.models import DatasetInfo
 from apps.etl.models import RegionTransformedData
 
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'email', 'password']
+class TokenObtainPairResponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+
+    def create(self, validated_data):
+        raise NotImplementedError()
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError()
+
+
+class TokenRefreshResponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+
+    def create(self, validated_data):
+        raise NotImplementedError()
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError()
+
+
+class Response401InvalidOrExpiredSerializer(serializers.Serializer):
+    detail = serializers.CharField(help_text='Token is invalid or expired')
+    code = serializers.CharField(help_text='token_not_valid')
+
+    def create(self, validated_data):
+        raise NotImplementedError()
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError()
+
+
+class Response401BlacklistedSerializer(serializers.Serializer):
+    detail = serializers.CharField(help_text='Token is blacklisted')
+    code = serializers.CharField(help_text='token_not_valid')
+
+    def create(self, validated_data):
+        raise NotImplementedError()
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError()
+
+
+class Response401NoAccountOrWrongCredentialsSerializer(serializers.Serializer):
+    detail = serializers.CharField(help_text='No active account found with the given credentials')
+
+    def create(self, validated_data):
+        raise NotImplementedError()
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError()
 
 
 class DatasetInfoSerializer(serializers.ModelSerializer):

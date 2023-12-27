@@ -7,4 +7,4 @@ route:
 receivers:
   - name: 'telepush'
     webhook_configs:
-      - url: 'https://telepush.dev/api/inlets/alertmanager/<TELEPUSH_TOKEN>'
+      - url: 'https://telepush:8083/api/inlets/alertmanager/<TELEPUSH_TOKEN>'

@@ -23,6 +23,7 @@ x-web-config: &web-config
 x-airflow-config: &airflow-config
   <<: *web-config
   AIRFLOW__CORE__DAGS_FOLDER: /dags
+  AIRFLOW__CORE__PLUGINS_FOLDER: /plugins
   AIRFLOW__CORE__EXECUTOR: CeleryExecutor
   AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
   AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql://airflow:${DB_AIRFLOW_PASS}@postgres:5432/airflow
@@ -54,6 +55,8 @@ x-airflow-config: &airflow-config
   AIRFLOW__LOGGING__FAB_LOGGING_LEVEL: "WARNING"
   AIRFLOW__LOGGING__LOG_FORMAT: "%(message)s"
 
+  TELEPUSH_TOKEN: ${TELEPUSH_TOKEN}
+
 
 x-airflow-base: &airflow-base
   build:
@@ -62,8 +65,8 @@ x-airflow-base: &airflow-base
   restart: always
   volumes:
     - ./airflow/dags:/dags
+    - ./airflow/plugins:/plugins
     - ./app:/app
-#    - ./airflow/logs:/opt/airflow/logs
   depends_on:
     &airflow-common-depends-on
     redis:
@@ -177,6 +180,17 @@ services:
     ports:
       - 8793:8793
 
-
+  telepush:
+    container_name: telepush
+    image: ghcr.io/muety/telepush
+    environment:
+      APP_TOKEN: ${BOTFATHER_TOKEN}
+      APP_MODE: poll
+    command: -port 8083
+    volumes:
+      - telepush_data:/srv/data
+    ports:
+      - 8083:8083
 volumes:
   postgres_data:
+  telepush_data:

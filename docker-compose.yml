@@ -22,6 +22,7 @@ x-web-config: &web-config
 x-airflow-config: &airflow-config
   <<: *web-config
   AIRFLOW__CORE__DAGS_FOLDER: /dags
+  AIRFLOW__CORE__PLUGINS_FOLDER: /plugins
   AIRFLOW__CORE__EXECUTOR: CeleryExecutor
   AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
   AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
@@ -54,6 +55,8 @@ x-airflow-config: &airflow-config
   AIRFLOW__LOGGING__FAB_LOGGING_LEVEL: "WARNING"
   AIRFLOW__LOGGING__LOG_FORMAT: "%(message)s"
 
+  TELEPUSH_TOKEN: ${TELEPUSH_TOKEN}
+
 x-airflow-base: &airflow-base
   build:
     context: ./
@@ -61,8 +64,8 @@ x-airflow-base: &airflow-base
   restart: always
   volumes:
     - ./airflow/dags:/dags
+    - ./airflow/plugins:/plugins
     - ./app:/app
-    - ./airflow/logs:/opt/airflow/logs
   depends_on:
     &airflow-common-depends-on
     redis:
@@ -118,10 +121,8 @@ services:
       - 8000
     volumes:
       - static_volume:/home/app/web/static
-      - web-logs:/home/app/web/logs
     environment:
       <<: *web-config
-      SERVICE_NAME: web
 
     depends_on:
       - postgres
@@ -171,12 +172,8 @@ services:
     container_name: airflow-worker
     environment:
       <<: *airflow-config
-      SERVICE_NAME: worker
 
     command: -c " sleep 10 && /entrypoint celery worker"
-    volumes:
-      - ./airflow/dags:/dags
-      - worker-logs:/app/logs
 
     depends_on:
       - airflow
@@ -207,21 +204,13 @@ services:
     ports:
       - "3100:3100"
 
-    depends_on:
-      - promtail
-
   promtail:
     image: grafana/promtail:2.9.2
     container_name: promtail
     volumes:
       - ./loki/promtail.yml:/etc/promtail/config.yml
       - /var/run/docker.sock:/var/run/docker.sock
-      - web-logs:/var/log/web/logs
       - nginx_log:/var/log/nginx
-
-    depends_on:
-      - web
-      - worker
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -348,12 +337,22 @@ services:
     ports:
       - 3000:3000
 
+  telepush:
+    container_name: telepush
+    image: ghcr.io/muety/telepush
+    environment:
+      APP_TOKEN: ${BOTFATHER_TOKEN}
+      APP_MODE: poll
+    command: -port 8083
+    volumes:
+      - telepush_data:/srv/data
+    ports:
+      - 8083:8083
+
 volumes:
   postgres_data:
   static_volume:
   prometheus_volume:
   grafana_data:
   nginx_log:
-  web-logs:
-  worker-logs:
-  airflow-logs:
+  telepush_data:

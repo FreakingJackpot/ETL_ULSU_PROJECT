@@ -26,20 +26,3 @@ datasources:
         - name: TraceID
           matcherRegex: trace_id=(\w+)
           url: 'http://localhost:16686/trace/$${__value.raw}'
-
-  - name: jaeger
-    type: jaeger
-    uid: my-jaeger
-    access: browser
-    url: http://jaeger:16686
-    isDefault: false
-    version: 1
-    editable: true
-    basicAuth: false
-    jsonData:
-      httpMethod: GET
-      tracesToLogs:
-        datasourceUid: my-loki
-        tags: [ ]
-        mappedTags: [ { key: 'service.name', value: 'app' } ]
-        mapTagNamesEnabled: true

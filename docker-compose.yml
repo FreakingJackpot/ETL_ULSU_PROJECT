@@ -67,7 +67,6 @@ x-airflow-base: &airflow-base
   restart: always
   volumes:
     - ./airflow/dags:/dags
-    - ./airflow/plugins:/plugins
     - ./app:/app
   depends_on:
     &airflow-common-depends-on
@@ -126,6 +125,7 @@ services:
       - static_volume:/home/app/web/static
     environment:
       <<: *web-config
+      SERVICE_NAME: web
 
     depends_on:
       - postgres
@@ -176,6 +176,7 @@ services:
     container_name: airflow-worker
     environment:
       <<: *airflow-config
+      SERVICE_NAME: worker
 
     command: -c " sleep 10 && /entrypoint celery worker"
 
@@ -207,6 +208,9 @@ services:
       - ./loki/loki.yml:/etc/loki/local-config.yaml
     ports:
       - "3100:3100"
+
+    depends_on:
+      - promtail
 
   promtail:
     image: grafana/promtail:2.9.2

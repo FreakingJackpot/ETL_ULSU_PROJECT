@@ -65,7 +65,6 @@ x-airflow-base: &airflow-base
   restart: always
   volumes:
     - ./airflow/dags:/dags
-    - ./airflow/plugins:/plugins
     - ./app:/app
   depends_on:
     &airflow-common-depends-on

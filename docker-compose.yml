@@ -338,11 +338,17 @@ services:
       - 3000:3000
 
   telepush:
+    #https://github.com/muety/telepush
     container_name: telepush
     image: ghcr.io/muety/telepush
     environment:
       APP_TOKEN: ${BOTFATHER_TOKEN}
-      APP_MODE: poll
+      APP_MODE: ${TELEPUSH_MODE}
+      APP_USE_HTTPS: ${TELEPUSH_USE_HTTPS}
+      APP_CERT_PATH: ${TELEPUSH_CERT_PATH}
+      APP_KEY_PATH: ${TELEPUSH_KEY_PATH}
+      APP_BLACKLIST: ${TELEPUSH_BLACKLIST}
+      APP_WHITELIST: ${TELEPUSH_WHITELIST}
     command: -port 8083
     volumes:
       - telepush_data:/srv/data

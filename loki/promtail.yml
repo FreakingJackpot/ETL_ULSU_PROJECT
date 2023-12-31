@@ -59,8 +59,3 @@ scrape_configs:
         labels:
           __path__: "/var/log/web/logs/*.log"
           app: web
-      - targets:
-          - localhost
-        labels:
-          __path__: "/var/log/worker/logs/*.log"
-          app: worker

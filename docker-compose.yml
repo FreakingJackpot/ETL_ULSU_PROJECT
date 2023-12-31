@@ -50,10 +50,13 @@ x-airflow-config: &airflow-config
   AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
   AIRFLOW__WEBSERVER__WEB_SERVER_PORT: 8081
 
+  AIRFLOW__LOGGING__REMOTE_LOGGING: "True"
+  AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: loki
+  AIRFLOW__LOGGING__LOGGING_CONFIG_CLASS: log_config.DEFAULT_LOGGING_CONFIG
+  AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: loki_conn
   AIRFLOW__LOGGING__BASE_LOG_FOLDER: "/opt/airflow/logs"
   AIRFLOW__LOGGING__LOGGING_LEVEL: "INFO" # DEBUG, INFO, WARNING, ERROR or CRITICAL.
   AIRFLOW__LOGGING__FAB_LOGGING_LEVEL: "WARNING"
-  AIRFLOW__LOGGING__LOG_FORMAT: "%(message)s"
 
   TELEPUSH_TOKEN: ${TELEPUSH_TOKEN}
 
@@ -153,6 +156,7 @@ services:
     command: >
       -c "sleep 10 &&
            /entrypoint db init &&
+          /entrypoint connections add loki_conn --conn-uri http://loki:3100
           (/entrypoint webserver &) &&
           (/entrypoint celery flower &) &&
            /entrypoint scheduler"
@@ -161,7 +165,7 @@ services:
       # Celery Flower
       - 5555:5555
       # Airflow Webserver
-      - 8081:8080
+      - 8081:8081
 
     depends_on:
       - postgres

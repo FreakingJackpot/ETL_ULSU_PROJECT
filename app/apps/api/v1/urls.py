@@ -1,13 +1,17 @@
 from django.urls import path
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView,
+)
 
-from .views import DecoratedTokenObtainPairView, DecoratedTokenRefreshView, DecoratedTokenVerifyView, \
-    DecoratedTokenBlacklistView, DatasetsInfo, Dataset
+from .views import PermittedTokenBlacklistView, DatasetsInfo, Dataset
 
 urlpatterns = [
-    path('token/', DecoratedTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('token/refresh/', DecoratedTokenRefreshView.as_view(), name='token_refresh'),
-    path('token/verify/', DecoratedTokenVerifyView.as_view(), name='token_verify'),
-    path('token/blacklist/', DecoratedTokenBlacklistView.as_view(), name='token_blacklist'),
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('token/blacklist/', PermittedTokenBlacklistView.as_view(), name='token_blacklist'),
     path('datasets-info/', DatasetsInfo.as_view(), name='datasets-info'),
     path('datasets/<str:dataset>/', Dataset.as_view(), name='dataset'),
 ]

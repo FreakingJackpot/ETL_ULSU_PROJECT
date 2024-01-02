@@ -12,11 +12,12 @@ from rest_framework_simplejwt.views import (
 )
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+
 from .serializers import (DatasetInfoSerializer, DatasetParamsSerializer,
-                          DatasetparamsValidationErrorResponseSerializer)
+                          DatasetparamsValidationErrorResponseSerializer, RegionsSerializer)
 from apps.api.models import DatasetInfo
 from apps.api.paginators import LargeResultsSetPagination
-from apps.etl.models import RegionTransformedData
+from apps.etl.models import RegionTransformedData, Region
 
 
 class PermittedTokenBlacklistView(TokenBlacklistView):
@@ -43,10 +44,17 @@ class DatasetsInfo(generics.ListAPIView):
         return self.list(request, *args, **kwargs)
 
 
+class Regions(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated, ]
+    authentication_classes = [JWTAuthentication, ]
+    queryset = Region.objects.all()
+    serializer_class = RegionsSerializer
+
+
 class Dataset(generics.ListAPIView):
     """Returns dataset by name."""
     renderer_classes = tuple(api_settings.DEFAULT_RENDERER_CLASSES) + (r.CSVRenderer,)
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, ]
     authentication_classes = [JWTAuthentication, ]
     pagination_class = LargeResultsSetPagination
     serializer_class = DatasetParamsSerializer

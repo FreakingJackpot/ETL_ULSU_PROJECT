@@ -185,3 +185,5 @@ STOPCORONA_URL_BASE = 'https://xn--90aivcdt6dxbc.xn--p1ai/{}'
 STOPCORONA_URL_ARTICLES_PAGE = STOPCORONA_URL_BASE.format('stopkoronavirus/?isAjax=Y&action=itemsMore&PAGEN_1={}')
 
 GOGOV_URL = 'https://gogov.ru/articles/covid-v-stats'
+
+REGIONS_PATH = str(BASE_DIR.joinpath('apps/etl/data/regions_data.pkl'))

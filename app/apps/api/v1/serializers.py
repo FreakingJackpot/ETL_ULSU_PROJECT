@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.api.models import DatasetInfo
-from apps.etl.models import RegionTransformedData
+from apps.etl.models import RegionTransformedData, Region
 
 
 class DatasetInfoSerializer(serializers.ModelSerializer):
@@ -10,6 +10,11 @@ class DatasetInfoSerializer(serializers.ModelSerializer):
         fields = ['dataset_name', 'description', ]
 
 
+class RegionsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Region
+        fields = '__all__'
+        
 class DatasetParamsSerializer(serializers.Serializer):
     default_error_messages = {"dataset doesn't exist": "Dataset with name {dataset} does not exist",
                               'unknown dataset fields': "Request contains unknown fields: {fields}",

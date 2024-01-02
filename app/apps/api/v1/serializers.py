@@ -4,78 +4,32 @@ from apps.api.models import DatasetInfo
 from apps.etl.models import RegionTransformedData
 
 
-class TokenObtainPairResponseSerializer(serializers.Serializer):
-    access = serializers.CharField()
-    refresh = serializers.CharField()
-
-    def create(self, validated_data):
-        raise NotImplementedError()
-
-    def update(self, instance, validated_data):
-        raise NotImplementedError()
-
-
-class TokenRefreshResponseSerializer(serializers.Serializer):
-    access = serializers.CharField()
-
-    def create(self, validated_data):
-        raise NotImplementedError()
-
-    def update(self, instance, validated_data):
-        raise NotImplementedError()
-
-
-class Response401InvalidOrExpiredSerializer(serializers.Serializer):
-    detail = serializers.CharField(help_text='Token is invalid or expired')
-    code = serializers.CharField(help_text='token_not_valid')
-
-    def create(self, validated_data):
-        raise NotImplementedError()
-
-    def update(self, instance, validated_data):
-        raise NotImplementedError()
-
-
-class Response401BlacklistedSerializer(serializers.Serializer):
-    detail = serializers.CharField(help_text='Token is blacklisted')
-    code = serializers.CharField(help_text='token_not_valid')
-
-    def create(self, validated_data):
-        raise NotImplementedError()
-
-    def update(self, instance, validated_data):
-        raise NotImplementedError()
-
-
-class Response401NoAccountOrWrongCredentialsSerializer(serializers.Serializer):
-    detail = serializers.CharField(help_text='No active account found with the given credentials')
-
-    def create(self, validated_data):
-        raise NotImplementedError()
-
-    def update(self, instance, validated_data):
-        raise NotImplementedError()
-
-
 class DatasetInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = DatasetInfo
         fields = ['dataset_name', 'description', ]
 
 
-class DatasetRequestSerializer(serializers.Serializer):
+class DatasetParamsSerializer(serializers.Serializer):
+    default_error_messages = {"dataset doesn't exist": "Dataset with name {dataset} does not exist",
+                              'unknown dataset fields': "Request contains unknown fields: {fields}",
+                              'unknown regions': "Request contains unknown regions: {regions}",
+                              }
     dataset = serializers.CharField(max_length=50, required=True)
     fields = serializers.ListField(help_text='comma separated list of fields', required=False)
     regions = serializers.ListField(help_text='comma separated list of regions names', required=False)
     start_date = serializers.DateField(required=False,
                                        help_text='start_date filter, values are greater than specified')
     end_date = serializers.DateField(required=False, help_text='end_date filter, values are below than specified')
+    all = serializers.BooleanField(required=False, help_text='return all dataset items', default=False)
 
     def validate(self, attrs):
-        if attrs['dataset'] not in DatasetInfo.DATASETS:
-            raise serializers.ValidationError(f"Dataset with name {attrs['dataset']} does not exist")
 
-        model = DatasetInfo.DATASETS[attrs['dataset']]
+        dataset = attrs['dataset']
+        if attrs['dataset'] not in DatasetInfo.DATASETS:
+            self.fail("dataset doesn't exist", dataset=dataset)
+
+        model = DatasetInfo.DATASETS[dataset]
         model_fields = set(field.name for field in model._meta.get_fields())
 
         if 'fields' in attrs:
@@ -83,7 +37,7 @@ class DatasetRequestSerializer(serializers.Serializer):
 
             unknown_fields = fields - model_fields
             if unknown_fields:
-                raise serializers.ValidationError(f"Request contains unknown fields: {','.join(unknown_fields)}")
+                self.fail("unknown dataset fields", fields=','.join(unknown_fields))
 
         if 'regions' in attrs:
             regions = set(attrs['regions'])
@@ -91,6 +45,16 @@ class DatasetRequestSerializer(serializers.Serializer):
 
             unknown_regions = regions - awailable_regions
             if unknown_regions:
-                raise serializers.ValidationError(f"Request contains unknown regions: {','.join(unknown_regions)}")
+                self.fail("unknown regions", regions=regions)
 
         return attrs
+
+
+class DatasetParamValidationErrorResponseSerializer(serializers.Serializer):
+    attr = serializers.CharField()
+    code = serializers.CharField()
+    detail = serializers.CharField()
+
+
+class DatasetparamsValidationErrorResponseSerializer(serializers.Serializer):
+    errors = DatasetParamValidationErrorResponseSerializer(many=True)

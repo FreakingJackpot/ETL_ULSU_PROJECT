@@ -4,9 +4,8 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('etl', '0011_remove_regiontransformeddata_first_component_and_more'),
+        ('etl', '0012_region'),
     ]
 
     operations = [
@@ -22,4 +21,9 @@ class Migration(migrations.Migration):
             model_name='gogovglobaldata',
             name='revaccinated',
         ),
+        migrations.RenameModel(
+            old_name='gogovglobaldata',
+            new_name='gogovdata',
+
+        )
     ]

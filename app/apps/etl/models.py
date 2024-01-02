@@ -110,13 +110,10 @@ class StopCoronaData(models.Model):
                                                    'deaths')
 
 
-class GogovGlobalData(models.Model):
+class GogovData(models.Model):
     date = models.DateField(unique=True)
     first_component = models.IntegerField()
     second_component = models.IntegerField()
-    children_vaccinated = models.IntegerField()
-    revaccinated = models.IntegerField()
-    need_revaccination = models.IntegerField()
 
     @classmethod
     def get_transform_data(cls, start_date, end_date):
@@ -158,7 +155,7 @@ class GlobalTransformedData(models.Model):
     def get_highest_not_null_values(cls, latest):
         vaccinations_queryset = cls.objects
         main_stats_queryset = cls.objects
-        gogov_earliest = GogovGlobalData.objects.earliest('date')
+        gogov_earliest = GogovData.objects.earliest('date')
         stopcorona_earliest = StopCoronaData.objects.earliest('start_date')
 
         if not latest:

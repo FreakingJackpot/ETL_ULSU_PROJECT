@@ -5,7 +5,7 @@ import pandas as pd
 from numpy import nan
 
 from apps.etl.models import ExternalDatabaseStatistic, ExternalDatabaseVaccination, CsvData, StopCoronaData, \
-    GogovGlobalData, GlobalTransformedData
+    GogovData, GlobalTransformedData
 from .transforming_functions import TransformingFunctions
 
 pd.options.mode.chained_assignment = None
@@ -123,7 +123,7 @@ class GlobalDataTransformer:
         stopcorona_data = StopCoronaData.get_global_transform_data(self.latest)
         dates = (stopcorona_data[0]['start_date'], stopcorona_data[0]['end_date']) if self.latest else None, None
 
-        gogov_data = GogovGlobalData.get_transform_data(*dates)
+        gogov_data = GogovData.get_transform_data(*dates)
 
         stopcorona_data = pd.DataFrame(data=stopcorona_data)
         gogov_data = pd.DataFrame(data=gogov_data)

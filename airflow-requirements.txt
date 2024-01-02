@@ -138,3 +138,4 @@ wrapt==1.16.0
 WTForms==3.0.1
 yarl==1.9.4
 zipp==3.17.0
+googleapis-common-protos==1.62.0

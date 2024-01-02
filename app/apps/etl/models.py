@@ -201,3 +201,7 @@ class RegionTransformedData(models.Model):
                  .annotate(infected=Max('infected'), deaths=Max('deaths'), recovered=Max('recovered'))
                  )
         return {itm['region']: itm for itm in items}
+
+
+class Region(models.Model):
+    name = models.TextField()

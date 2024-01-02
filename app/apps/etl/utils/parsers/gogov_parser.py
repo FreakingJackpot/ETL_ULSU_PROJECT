@@ -15,7 +15,7 @@ def convert_str_to_date(date_str, date_format):
 class GogovParser:
     _url = settings.GOGOV_URL
 
-    _global_spans = {1: "first_component", 2: "second_component", 3: "children_vaccinated", 6: "need_revaccination"}
+    _global_spans = {1: "first_component", 2: "second_component", }
     _global_span_clean_function = partial(re.sub, " |чел.", "")
     _global_date_format = '%d.%m.%y'
 
@@ -53,7 +53,6 @@ class GogovParser:
         spans = global_section.find_all("span")
         for i, field_name in cls._global_spans.items():
             global_data[field_name] = int(cls._global_span_clean_function(spans[i].text))
-        global_data['revaccinated'] = int(cls._global_span_clean_function(global_section.find("b").text))
         return global_data
 
     @classmethod

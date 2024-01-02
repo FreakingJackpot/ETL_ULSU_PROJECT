@@ -1,6 +1,4 @@
-import re
 from datetime import datetime
-from functools import partial
 from unittest.mock import patch
 
 from bs4 import BeautifulSoup
@@ -58,10 +56,7 @@ class GogovTestCase(TestCase):
         expected_data = {
             'date': datetime.strptime('25.11.2023', '%d.%m.%Y').date(),
             'first_component': 89081596,
-            'full_vaccinated': 79702396,
-            'children_vaccinated': 202961,
-            'need_revaccination': 79699284,
-            'revaccinated': 20829310,
+            'second_component': 79702396,
         }
         self.assertEqual(global_data, expected_data)
 
@@ -73,10 +68,7 @@ class GogovTestCase(TestCase):
         global_data = {
             'date': datetime.strptime('25.11.2023', '%d.%m.%Y').date(),
             'first_component': 89081596,
-            'full_vaccinated': 79702396,
-            'children_vaccinated': 202961,
-            'need_revaccination': 79699284,
-            'revaccinated': 20829310,
+            'second_component': 79702396,
         }
 
         self.assertEqual(result, global_data)

@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from apps.etl.models import GogovGlobalData
+from apps.etl.models import GogovData
 from apps.etl.utils.parsers.gogov_parser import GogovParser
 
 
@@ -17,4 +17,4 @@ class Command(BaseCommand):
         return parser.get_data()
 
     def upload_to_db(self, data):
-        GogovGlobalData.objects.get_or_create(date=data.pop('date'), defaults=data)
+        GogovData.objects.get_or_create(date=data.pop('date'), defaults=data)

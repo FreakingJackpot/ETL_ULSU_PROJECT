@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.api.models import DatasetInfo
-from apps.etl.models import RegionTransformedData
+from apps.etl.models import RegionTransformedData, Region
 
 
 class TokenObtainPairResponseSerializer(serializers.Serializer):
@@ -61,6 +61,12 @@ class DatasetInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = DatasetInfo
         fields = ['dataset_name', 'description', ]
+
+
+class RegionsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Region
+        fields = '__all__'
 
 
 class DatasetRequestSerializer(serializers.Serializer):

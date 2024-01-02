@@ -4,7 +4,7 @@ from unittest import TestCase
 
 from django.conf import settings
 
-from apps.etl.management.commands.import_from_csv import Command
+from apps.etl.management.commands.import_covid_statistics_from_csv import Command
 from apps.etl.models import CsvData
 
 

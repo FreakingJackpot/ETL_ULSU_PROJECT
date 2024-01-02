@@ -1,4 +1,4 @@
-from rest_framework import generics, status,permissions
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse, \
     PolymorphicProxySerializer
@@ -16,9 +16,9 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from .serializers import (TokenObtainPairResponseSerializer, TokenRefreshResponseSerializer,
                           Response401InvalidOrExpiredSerializer, Response401BlacklistedSerializer,
                           Response401NoAccountOrWrongCredentialsSerializer, DatasetInfoSerializer,
-                          DatasetRequestSerializer)
+                          DatasetRequestSerializer, RegionsSerializer)
 from apps.api.models import DatasetInfo
-from apps.etl.models import RegionTransformedData
+from apps.etl.models import RegionTransformedData, Region
 
 
 class DecoratedTokenObtainPairView(TokenObtainPairView):
@@ -91,9 +91,16 @@ class DatasetsInfo(generics.ListAPIView):
         return self.list(request, *args, **kwargs)
 
 
+class Regions(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated, ]
+    authentication_classes = [JWTAuthentication, ]
+    queryset = Region.objects.all()
+    serializer_class = RegionsSerializer
+
+
 class Dataset(generics.ListAPIView):
     renderer_classes = tuple(api_settings.DEFAULT_RENDERER_CLASSES) + (r.CSVRenderer,)
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, ]
     authentication_classes = [JWTAuthentication, ]
 
     @extend_schema(

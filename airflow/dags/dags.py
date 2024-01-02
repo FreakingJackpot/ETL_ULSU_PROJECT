@@ -66,13 +66,28 @@ load_region_data_task_template = partial(DjangoOperator, task_id='load_region_da
                                          python_callable=load_region_data)
 
 
+@dag(dag_id='regions_import', description='ETL process for legacy data', schedule_interval="@once",
+     start_date=datetime(2023, 1, 1), max_active_runs=1, render_template_as_native_obj=True,
+     on_success_callback=dag_success_alert, on_failure_callback=task_failure_alert, )
+def regions_import():
+    def regions_import():
+        from django.core.management import call_command
+        call_command('import_regions')
+
+        csv_import_task = DjangoOperator(
+            task_id='regions_import',
+            python_callable=regions_import,
+            on_execute_callback=dag_running_alert,
+        )
+
+
 @dag(dag_id='etl_legacy_data', description='ETL process for legacy data', schedule_interval="@once",
      start_date=datetime(2023, 1, 1), max_active_runs=1, render_template_as_native_obj=True,
      on_success_callback=dag_success_alert, on_failure_callback=task_failure_alert, )
 def etl_legacy_data():
     def csv_import():
         from django.core.management import call_command
-        call_command('import_from_csv')
+        call_command('import_covid_statistics_from_csv')
 
     def transform_legacy_global_data(ti):
         # Не запускаю с помощью call_command, тк надо будет преобразовывать data в str в handle

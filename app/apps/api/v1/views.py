@@ -72,12 +72,6 @@ class Dataset(generics.ListAPIView):
                              type=OpenApiTypes.STR),
             OpenApiParameter(name='regions', description='comma separated list of regions', required=False,
                              type=OpenApiTypes.STR),
-            OpenApiParameter(name='start_date', description='start_date filter, values are greater than specified',
-                             required=False, type=OpenApiTypes.DATE,
-                             examples=[OpenApiExample(name='non legacy data example', value='2023-08-23'), ]),
-            OpenApiParameter(name='end_date', description='end_date filter, values are below than specified',
-                             required=False, type=OpenApiTypes.DATE,
-                             examples=[OpenApiExample(name='legacy data example', value='2023-08-23'), ]),
 
         ]
     )
@@ -108,21 +102,13 @@ class Dataset(generics.ListAPIView):
         serializer = DatasetParamsSerializer(data=params)
         serializer.is_valid(raise_exception=True)
 
-        return serializer.validated_data
+        return serializer.data
 
     def get_queryset(self):
-        return self.validated_data['model'].objects.values()
+        return self.validated_data['model'].objects.order_by('id').values()
 
     def filter_queryset(self, queryset):
         if self.validated_data['regions']:
             queryset = queryset.filter(region__in=self.validated_data['regions'])
-
-        start_date = self.validated_data.get('start_date')
-        if start_date:
-            queryset = queryset.filter(start_date__gt=start_date)
-
-        end_date = self.validated_data.get('end_date')
-        if end_date:
-            queryset = queryset.filter(end_date__lt=end_date)
 
         return queryset.values(*self.validated_data['fields'])

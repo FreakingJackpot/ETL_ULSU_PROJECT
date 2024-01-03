@@ -14,5 +14,5 @@ urlpatterns = [
     path('token/blacklist/', PermittedTokenBlacklistView.as_view(), name='token_blacklist'),
     path('datasets-info/', DatasetsInfo.as_view(), name='datasets-info'),
     path('regions/', Regions.as_view(), name='regions'),
-    path('datasets/<str:dataset>/', Dataset.as_view(), name='dataset'),
+    path('datasets/<str:dataset_name>/', Dataset.as_view(), name='dataset'),
 ]

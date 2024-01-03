@@ -1,3 +1,4 @@
+from django.core.exceptions import FieldDoesNotExist
 from rest_framework import serializers
 from django.apps import apps
 
@@ -22,22 +23,20 @@ class DatasetParamsSerializer(serializers.Serializer):
                               'unknown dataset fields': "Request contains unknown fields: {fields}",
                               'unknown regions': "Request contains unknown regions: {regions}",
                               }
-    dataset = serializers.CharField(max_length=50, required=True)
+    dataset_name = serializers.CharField(max_length=50, required=True)
     fields = serializers.ListField(help_text='comma separated list of fields', required=False)
     regions = serializers.ListField(help_text='comma separated list of regions names', required=False)
-    start_date = serializers.DateField(required=False,
-                                       help_text='start_date filter, values are greater than specified')
-    end_date = serializers.DateField(required=False, help_text='end_date filter, values are below than specified')
     all = serializers.BooleanField(required=False, help_text='return all dataset items', default=False)
     model = serializers.SerializerMethodField()
 
+
     def validate(self, attrs):
 
-        dataset = attrs['dataset']
-        info_object = DatasetInfo.objects.filter(dataset_name=attrs['dataset']).first()
+        dataset_name = attrs['dataset_name']
+        info_object = DatasetInfo.objects.filter(dataset_name=attrs['dataset_name']).first()
 
         if not info_object:
-            self.fail("dataset doesn't exist", dataset=dataset)
+            self.fail("dataset doesn't exist", dataset=dataset_name)
 
         model = apps.get_model(app_label='etl', model_name=info_object.model_name)
         model_fields = set(field.name for field in model._meta.get_fields())
@@ -51,7 +50,7 @@ class DatasetParamsSerializer(serializers.Serializer):
 
         if self._has_field(model, 'region') and 'regions' in attrs:
             regions = set(attrs['regions'])
-            awailable_regions = set(RegionTransformedData.objects.values_list('region', flat=True))
+            awailable_regions = set(Region.objects.values_list('name', flat=True))
 
             unknown_regions = regions - awailable_regions
             if unknown_regions:
@@ -63,14 +62,14 @@ class DatasetParamsSerializer(serializers.Serializer):
 
     def _has_field(self, model, field):
         try:
-            queryset.model._meta.get_field(field)
+            model._meta.get_field(field)
         except FieldDoesNotExist:
             return False
 
         return True
 
     def get_model(self, obj):
-        info_object = DatasetInfo.objects.filter(dataset_name=obj.dataset).first()
+        info_object = DatasetInfo.objects.filter(dataset_name=obj['dataset_name']).first()
         return apps.get_model(app_label='etl', model_name=info_object.model_name)
 
 

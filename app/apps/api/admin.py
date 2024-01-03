@@ -1,3 +1,4 @@
 from django.contrib import admin
+from apps.api.models import DatasetInfo
 
-# Register your models here.
+admin.site.register(DatasetInfo)

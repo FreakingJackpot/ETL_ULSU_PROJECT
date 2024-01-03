@@ -5,7 +5,7 @@ import pandas as pd
 from numpy import nan
 
 from apps.etl.models import ExternalDatabaseStatistic, StopCoronaData, RegionTransformedData
-from .transforming_functions import TransformingFunctions
+from .transforming_functions import GenericTransformingFunctions
 
 pd.options.mode.chained_assignment = None
 
@@ -13,39 +13,40 @@ pd.options.mode.chained_assignment = None
 class LegacyRegionDataTransformer:
     @classmethod
     def run(cls):
-        external_data = cls._get_dataframes()
-        transformed_external_data = cls._transform_external_data(external_data)
-        return transformed_external_data.to_dict('records')
+        data_df = cls._get_dataframe()
+        transformed_df = cls._apply_transforms(data_df)
+        return transformed_df.to_dict('records')
 
     @classmethod
-    def _get_dataframes(cls):
-        external_data = ExternalDatabaseStatistic.get_all_transform_data(with_region=True)
-
-        external_data = pd.DataFrame(data=external_data)
-
-        return external_data
+    def _get_dataframe(cls):
+        data = ExternalDatabaseStatistic.get_all_transform_data(with_region=True)
+        data_df = pd.DataFrame(data=data)
+        return data_df
 
     @classmethod
-    def _transform_external_data(cls, external_data):
-        external_data['date'] = pd.to_datetime(external_data['date'])
-        external_data = external_data.groupby('region').resample('W-MON', on='date').sum(numeric_only=True)
-        external_data.reset_index(['date', 'region'], inplace=True)
-        external_data['date'] = pd.to_datetime(external_data['date'])
+    def _apply_transforms(cls, data_df):
+        weekly_df = cls._transform_to_weekly_format(data_df)
+        weekly_df = GenericTransformingFunctions.apply_all_transforms(weekly_df, True)
 
-        external_data.rename(
+        return weekly_df
+
+    @classmethod
+    def _transform_to_weekly_format(cls, data_df):
+        data_df['date'] = pd.to_datetime(data_df['date'])
+        data_df = data_df.groupby('region').resample('W-MON', on='date').sum(numeric_only=True)
+        data_df.reset_index(['date', 'region'], inplace=True)
+        data_df['date'] = pd.to_datetime(data_df['date'])
+
+        data_df.rename(
             columns={'death_per_day': 'weekly_deaths',
                      'infection_per_day': 'weekly_infected',
                      'recovery_per_day': 'weekly_recovered'}, inplace=True)
 
-        external_data['start_date'] = external_data.apply(lambda row: (row.date - timedelta(days=6)).date(), axis=1)
-        external_data.rename(columns={'date': 'end_date'}, inplace=True)
-        external_data['end_date'] = external_data.apply(lambda row: row.end_date.date(), axis=1)
+        data_df['start_date'] = data_df.apply(lambda row: (row.date - timedelta(days=6)).date(), axis=1)
+        data_df.rename(columns={'date': 'end_date'}, inplace=True)
+        data_df['end_date'] = data_df.apply(lambda row: row.end_date.date(), axis=1)
 
-        external_data = TransformingFunctions.apply_all_transforms(external_data, True)
-
-        external_data.replace({nan: None}, inplace=True)
-
-        return external_data
+        return data_df
 
 
 class RegionDataTransformer:
@@ -64,7 +65,6 @@ class RegionDataTransformer:
         ('Карачаево-Черкесская Республика', 'Карачаево-Черкессия'), ('Республика Ингушетия', 'Ингушетия'),
         ('Чукотский автономный округ', 'Чукотский АО'), ('Республика Бурятия', 'Бурятия'),
         ('Республика Дагестан', 'Дагестан'), ('Республика Марий Эл', 'Марий Эл'), ('Республика Алтай', 'Алтай'),
-        ('область', 'обл.'),  # обязательно последним, иначе может заменить другие названия
     )
 
     def __init__(self, latest=False):
@@ -76,19 +76,18 @@ class RegionDataTransformer:
         return transformed_data.to_dict('records')
 
     def _get_dataframe(self):
-        stopcorona_data = StopCoronaData.get_transform_region_data(self.latest)
+        stopcorona_data = StopCoronaData.get_region_transform_data(self.latest)
         stopcorona_data = pd.DataFrame(data=stopcorona_data)
         return stopcorona_data
 
-    @classmethod
-    def _transform_data(cls, stopcorona_data):
+    def _transform_data(self, stopcorona_data):
         stopcorona_data.rename(
             columns={'infected': 'weekly_infected', 'recovered': 'weekly_recovered', 'deaths': 'weekly_deaths', },
             inplace=True)
-        cls._rename_regions(stopcorona_data)
-        cls._add_cumulative_stats(stopcorona_data)
-        stopcorona_data = TransformingFunctions.add_per_100000_stats(stopcorona_data)
-        stopcorona_data = TransformingFunctions.add_ratio_stats(stopcorona_data, True)
+        self._rename_regions(stopcorona_data)
+        self._add_cumulative_stats(stopcorona_data)
+        stopcorona_data = GenericTransformingFunctions.add_per_100000_stats(stopcorona_data)
+        stopcorona_data = GenericTransformingFunctions.add_ratio_stats(stopcorona_data, True)
 
         stopcorona_data.replace({nan: None}, inplace=True)
 
@@ -98,10 +97,10 @@ class RegionDataTransformer:
     def _rename_regions(cls, stopcorona_data):
         for mapping in cls._regions_map:
             stopcorona_data['region'] = stopcorona_data['region'].str.replace(*mapping)
+        stopcorona_data['region'] = stopcorona_data['region'].str.replace('область', 'обл.')
 
-    @classmethod
-    def _add_cumulative_stats(cls, stopcorona_data):
-        latest_data_map = RegionTransformedData.get_latest_data_map()
+    def _add_cumulative_stats(self, stopcorona_data):
+        latest_data_map = RegionTransformedData.get_highest_not_null_values(self.latest)
 
         stopcorona_data['infected'] = None
         stopcorona_data['recovered'] = None

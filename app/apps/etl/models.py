@@ -100,7 +100,7 @@ class StopCoronaData(models.Model):
         return data
 
     @classmethod
-    def get_transform_region_data(cls, latest):
+    def get_region_transform_data(cls, latest):
         query = cls.objects.exclude(region=cls.RUSSIAN_FEDERATION)
         if latest:
             latest_date = query.aggregate(latest_date=Max('start_date'))['latest_date']
@@ -155,10 +155,11 @@ class GlobalTransformedData(models.Model):
     def get_highest_not_null_values(cls, latest):
         vaccinations_queryset = cls.objects
         main_stats_queryset = cls.objects
-        gogov_earliest = GogovData.objects.earliest('date')
-        stopcorona_earliest = StopCoronaData.objects.earliest('start_date')
 
         if not latest:
+            gogov_earliest = GogovData.objects.earliest('date')
+            stopcorona_earliest = StopCoronaData.objects.earliest('start_date')
+
             if gogov_earliest:
                 vaccinations_queryset = vaccinations_queryset.filter(end_date__lt=gogov_earliest.date)
             if stopcorona_earliest:
@@ -195,11 +196,16 @@ class RegionTransformedData(models.Model):
         unique_together = ['start_date', 'end_date', 'region']
 
     @classmethod
-    def get_latest_data_map(cls):
-        items = (cls.objects
-                 .values('region')
-                 .annotate(infected=Max('infected'), deaths=Max('deaths'), recovered=Max('recovered'))
-                 )
+    def get_highest_not_null_values(cls, latest):
+        query = cls.objects.values('region')
+
+        if not latest:
+            stopcorona_earliest = StopCoronaData.objects.earliest('start_date')
+
+            if stopcorona_earliest:
+                query = query.filter(end_date__lt=stopcorona_earliest.start_date)
+
+        items = query.annotate(infected=Max('infected'), deaths=Max('deaths'), recovered=Max('recovered'))
         return {itm['region']: itm for itm in items}
 
 

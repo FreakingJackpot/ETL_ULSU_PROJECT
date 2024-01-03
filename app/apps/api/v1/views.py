@@ -12,10 +12,9 @@ from rest_framework_simplejwt.views import (
 )
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-
 from .serializers import (DatasetInfoSerializer, DatasetParamsSerializer,
                           DatasetparamsValidationErrorResponseSerializer, RegionsSerializer)
-from apps.api.models import DatasetInfo
+from apps.api.models import DatasetInfo, INVALID
 from apps.api.paginators import LargeResultsSetPagination
 from apps.etl.models import RegionTransformedData, Region
 
@@ -32,7 +31,7 @@ class DatasetsInfo(generics.ListAPIView):
     """Returns lists of datasets infos"""
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [JWTAuthentication, ]
-    queryset = DatasetInfo.objects.all()
+    queryset = DatasetInfo.objects.exclude(model_name=INVALID)
     serializer_class = DatasetInfoSerializer
 
     @extend_schema(
@@ -112,11 +111,10 @@ class Dataset(generics.ListAPIView):
         return serializer.validated_data
 
     def get_queryset(self):
-        model = DatasetInfo.DATASETS[self.validated_data['dataset']]
-        return model.objects.values()
+        return self.validated_data['model'].objects.values()
 
     def filter_queryset(self, queryset):
-        if queryset.model is RegionTransformedData and self.validated_data['regions']:
+        if self.validated_data['regions']:
             queryset = queryset.filter(region__in=self.validated_data['regions'])
 
         start_date = self.validated_data.get('start_date')

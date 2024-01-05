@@ -1,11 +1,12 @@
 from datetime import datetime
+from abc import ABC
 
 from django.db.models import Model
 
 from apps.etl.models import GlobalTransformedData, RegionTransformedData
 
 
-class TransformedDataMapperBase(object):
+class TransformedDataMapperBase(ABC):
     _model = Model
     _object_key_fields = ()
     _batch_size = 500

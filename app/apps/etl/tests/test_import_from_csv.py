@@ -1,7 +1,7 @@
 import csv
 import os
-from unittest import TestCase
 
+from django.test import TestCase
 from django.conf import settings
 
 from apps.etl.management.commands.import_covid_statistics_from_csv import Command

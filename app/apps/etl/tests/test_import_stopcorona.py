@@ -1,5 +1,6 @@
 from datetime import datetime
-from unittest import TestCase
+
+from django.test import TestCase
 
 from apps.etl.management.commands.import_stopcorona_data import Command
 from apps.etl.models import StopCoronaData

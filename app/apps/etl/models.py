@@ -109,6 +109,24 @@ class StopCoronaData(models.Model):
         return query.order_by('start_date').values('start_date', 'end_date', 'region', 'infected', 'recovered',
                                                    'deaths')
 
+    @classmethod
+    def get_earliest(cls):
+        try:
+            earliest = StopCoronaData.objects.earliest('start_date')
+        except StopCoronaData.DoesNotExist:
+            earliest = None
+
+        return earliest
+
+    @classmethod
+    def get_latest(cls):
+        try:
+            latest = StopCoronaData.objects.latest('start_date')
+        except StopCoronaData.DoesNotExist:
+            latest = None
+
+        return latest
+
 
 class GogovData(models.Model):
     date = models.DateField(unique=True)
@@ -121,6 +139,24 @@ class GogovData(models.Model):
         if start_date and end_date:
             query = query.filter(date__gte=start_date, date__lte=end_date)
         return query.order_by('date')
+
+    @classmethod
+    def get_earliest(cls):
+        try:
+            earliest = GogovData.objects.earliest('date')
+        except GogovData.DoesNotExist:
+            earliest = None
+
+        return earliest
+
+    @classmethod
+    def get_latest(cls):
+        try:
+            latest = GogovData.objects.latest('date')
+        except GogovData.DoesNotExist:
+            latest = None
+
+        return latest
 
 
 class GlobalTransformedData(models.Model):
@@ -156,9 +192,17 @@ class GlobalTransformedData(models.Model):
         vaccinations_queryset = cls.objects
         main_stats_queryset = cls.objects
 
-        if not latest:
-            gogov_earliest = GogovData.objects.earliest('date')
-            stopcorona_earliest = StopCoronaData.objects.earliest('start_date')
+        if latest:
+            gogov_latest = GogovData.get_latest()
+            stopcorona_latest = StopCoronaData.get_latest()
+
+            if gogov_latest:
+                vaccinations_queryset = vaccinations_queryset.filter(end_date__lt=gogov_latest.date)
+            if stopcorona_latest:
+                main_stats_queryset = main_stats_queryset.filter(end_date__lt=stopcorona_latest.start_date)
+        else:
+            gogov_earliest = GogovData.get_earliest()
+            stopcorona_earliest = StopCoronaData.get_earliest()
 
             if gogov_earliest:
                 vaccinations_queryset = vaccinations_queryset.filter(end_date__lt=gogov_earliest.date)
@@ -199,9 +243,12 @@ class RegionTransformedData(models.Model):
     def get_highest_not_null_values(cls, latest):
         query = cls.objects.values('region')
 
-        if not latest:
-            stopcorona_earliest = StopCoronaData.objects.earliest('start_date')
-
+        if latest:
+            stopcorona_latest = StopCoronaData.get_latest()
+            if stopcorona_latest:
+                query = query.filter(end_date__lt=stopcorona_latest.start_date)
+        else:
+            stopcorona_earliest = StopCoronaData.get_earliest()
             if stopcorona_earliest:
                 query = query.filter(end_date__lt=stopcorona_earliest.start_date)
 

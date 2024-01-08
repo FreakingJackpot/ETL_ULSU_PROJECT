@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import DatabaseError
 
@@ -11,6 +12,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("all", type=int, help='0-latest information, 1-full available information', choices=(0, 1),
                             default=0, nargs='?')
+        parser.add_argument("manual", nargs='?', type=str, default=False)
 
     def handle(self, *args, **options):
         self.all = options["all"]
@@ -19,7 +21,8 @@ class Command(BaseCommand):
         parsed_data = self.get_parsed_data()
         self.stdout.write(f"Parsed {len(parsed_data)} elements")
 
-        return bool(self.upload_to_db(parsed_data))
+        if options['manual']:
+            return bool(self.upload_to_db(parsed_data))
 
     def get_parsed_data(self):
         parser = StopCoronaParser(all=self.all)

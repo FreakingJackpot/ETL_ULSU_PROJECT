@@ -14,5 +14,6 @@ class Command(BaseCommand):
         with open(settings.REGIONS_PATH, 'rb') as f:
             regions = pickle.load(f)
 
-        for region in regions:
+        existing_regions = set(Region.objects.filter(name__in=regions).values_list('name', flat=True))
+        for region in filter(lambda x: x not in existing_regions, regions):
             Region.objects.create(name=region)

@@ -1,7 +1,7 @@
 from datetime import datetime
-from unittest import TestCase
 from unittest.mock import patch
 
+from django.test import TestCase
 from bs4 import BeautifulSoup
 
 from apps.etl.utils.parsers.stopcorona_parser import StopCoronaParser

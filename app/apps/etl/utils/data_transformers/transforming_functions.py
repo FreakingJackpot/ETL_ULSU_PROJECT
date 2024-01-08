@@ -1,9 +1,10 @@
 import pandas as pd
+from numpy import nan
 
 RF_POPULATION = 146447424
 
 
-class TransformingFunctions:
+class GenericTransformingFunctions:
     _default_ratio_keys = ('weekly_recovered_infected_ratio', 'weekly_deaths_infected_ratio',)
 
     @staticmethod
@@ -12,10 +13,12 @@ class TransformingFunctions:
         df['recovered'] = base_query['weekly_recovered'].cumsum()
         df['deaths'] = base_query['weekly_deaths'].cumsum()
         df['infected'] = base_query['weekly_infected'].cumsum()
+        df[['recovered', 'deaths', 'infected']].ffill(inplace=True)
 
         if not region:
             df['first_component'] = base_query['weekly_first_component'].cumsum()
             df['second_component'] = base_query['weekly_second_component'].cumsum()
+            df[['first_component', 'second_component', ]].ffill(inplace=True)
 
     @staticmethod
     def add_per_100000_stats(df):
@@ -62,8 +65,14 @@ class TransformingFunctions:
         return df
 
     @classmethod
+    def replace_nan_with_none(cls, df):
+        df.replace({nan: None}, inplace=True)
+
+    @classmethod
     def apply_all_transforms(cls, df, region=False):
         cls.add_cumulative_stats(df, region)
         df = cls.add_per_100000_stats(df)
         df = cls.add_ratio_stats(df, region)
+        cls.replace_nan_with_none(df)
+
         return df

@@ -1,11 +1,12 @@
 from datetime import datetime
+from abc import ABC
 
 from django.db.models import Model
 
 from apps.etl.models import GlobalTransformedData, RegionTransformedData
 
 
-class TransformedDataMapperBase(object):
+class TransformedDataMapperBase(ABC):
     _model = Model
     _object_key_fields = ()
     _batch_size = 500
@@ -59,10 +60,11 @@ class GlobalTransformedDataMapper(TransformedDataMapperBase):
     _model = GlobalTransformedData
     _object_key_fields = ('start_date', 'end_date',)
     _update_fields = (
-        'weekly_infected', 'weekly_deaths', 'weekly_recovered', 'infected', 'deaths', 'recovered', 'first_component',
-        'second_component', 'weekly_infected_per_100000', 'weekly_deaths_per_100000', 'weekly_recovered_per_100000',
-        'infected_per_100000', 'deaths_per_100000', 'recovered_per_100000', 'weekly_recovered_infected_ratio',
-        'weekly_deaths_infected_ratio', 'weekly_vaccinations_infected_ratio', 'vaccinations_population_ratio'
+        'weekly_infected', 'weekly_deaths', 'weekly_recovered', 'weekly_first_component', 'weekly_vaccinations',
+        'weekly_second_component', 'infected', 'deaths', 'recovered', 'first_component', 'second_component',
+        'weekly_infected_per_100000', 'weekly_deaths_per_100000', 'weekly_recovered_per_100000', 'infected_per_100000',
+        'deaths_per_100000', 'recovered_per_100000', 'weekly_recovered_infected_ratio', 'weekly_deaths_infected_ratio',
+        'weekly_vaccinations_infected_ratio', 'vaccinations_population_ratio',
     )
 
 
@@ -70,8 +72,8 @@ class RegionTransformedDataMapper(TransformedDataMapperBase):
     _model = RegionTransformedData
     _object_key_fields = ('start_date', 'end_date', 'region',)
     _update_fields = (
-        'weekly_infected', 'weekly_deaths', 'weekly_recovered', 'infected', 'deaths', 'recovered',
-        'weekly_infected_per_100000', 'weekly_deaths_per_100000', 'weekly_recovered_per_100000',
-        'infected_per_100000', 'deaths_per_100000', 'recovered_per_100000', 'weekly_recovered_infected_ratio',
-        'weekly_deaths_infected_ratio',
+        'weekly_infected', 'weekly_deaths', 'weekly_recovered', 'weekly_infected_per_100000',
+        'weekly_deaths_per_100000', 'weekly_recovered_per_100000', 'infected_per_100000', 'deaths_per_100000',
+        'recovered_per_100000', 'weekly_recovered_infected_ratio', 'weekly_deaths_infected_ratio', 'infected', 'deaths',
+        'recovered',
     )

@@ -6,96 +6,88 @@ from numpy import nan
 
 from apps.etl.models import ExternalDatabaseStatistic, ExternalDatabaseVaccination, CsvData, StopCoronaData, \
     GogovData, GlobalTransformedData
-from .transforming_functions import TransformingFunctions
+from .transforming_functions import GenericTransformingFunctions
 
 pd.options.mode.chained_assignment = None
 
 
 class LegacyGlobalDataTransformer:
+
     @classmethod
     def run(cls):
-        external_data_main, external_data_vaccinations, csv_data = cls._get_dataframes()
-
-        external_data_main = cls._transform_external_data_main(external_data_main)
-        external_data_vaccinations = cls._transform_external_data_vaccinations(external_data_vaccinations)
-        csv_data = cls._transform_csv_data(csv_data)
-
-        transformed_df = cls._prepare_transformed_df(external_data_main, external_data_vaccinations, csv_data)
-
+        external_data_main, vaccinations_data, csv_data = cls._get_dataframes()
+        external_data_main = cls._summarize_external_data_main(external_data_main)
+        merged_df = cls._merge_all_dfs(external_data_main, vaccinations_data, csv_data)
+        transformed_df = cls._apply_transforms(merged_df)
         return transformed_df.to_dict('records')
 
     @classmethod
     def _get_dataframes(cls):
         external_data_main = ExternalDatabaseStatistic.get_all_transform_data()
-        external_data_vaccinations = ExternalDatabaseVaccination.get_all_transform_data()
+        vaccinations_data = ExternalDatabaseVaccination.get_all_transform_data()
         csv_data = CsvData.get_all_transform_data()
 
         external_data_main = pd.DataFrame(data=external_data_main)
-        external_data_vaccinations = pd.DataFrame(data=external_data_vaccinations)
+        vaccinations_data = pd.DataFrame(data=vaccinations_data)
         csv_data = pd.DataFrame(data=csv_data)
 
-        return external_data_main, external_data_vaccinations, csv_data
+        return external_data_main, vaccinations_data, csv_data
 
     @classmethod
-    def _transform_external_data_main(cls, external_data_main):
+    def _summarize_external_data_main(cls, external_data_main):
         external_data_main = external_data_main.groupby("date").sum()
         external_data_main.reset_index('date', inplace=True)
-
-        external_data_main['date'] = pd.to_datetime(external_data_main['date'])
-        external_data_main = external_data_main.loc[external_data_main["date"] >= "2020-12-15"]
-        external_data_main = external_data_main.resample('W-MON', on='date').sum()
-        external_data_main.reset_index('date', inplace=True)
-
-        external_data_main.rename(
-            columns={'death_per_day': 'weekly_deaths',
-                     'infection_per_day': 'weekly_infected',
-                     'recovery_per_day': 'weekly_recovered'}, inplace=True)
-
         return external_data_main
 
     @classmethod
-    def _transform_external_data_vaccinations(cls, external_data_vaccinations):
-        external_data_vaccinations['date'] = pd.to_datetime(external_data_vaccinations['date'])
-        external_data_vaccinations = external_data_vaccinations.resample('W-MON', on='date').sum()
-        external_data_vaccinations.reset_index('date', inplace=True)
-
-        external_data_vaccinations.rename(columns={'daily_vaccinations': 'weekly_vaccinations',
-                                                   'daily_people_vaccinated': 'weekly_first_component',
-                                                   }, inplace=True)
-        external_data_vaccinations['weekly_second_component'] = external_data_vaccinations.apply(
-            lambda row: row.weekly_vaccinations - row.weekly_first_component, axis=1)
-
-        return external_data_vaccinations
-
-    @classmethod
-    def _transform_csv_data(cls, csv_data):
+    def _merge_all_dfs(cls, external_data_main, vaccinations_data, csv_data):
         csv_data['date'] = pd.to_datetime(csv_data['date'])
-        csv_data = csv_data.resample('W-MON', on='date').sum()
-        csv_data.reset_index('date', inplace=True)
+        most_recent_date = csv_data['date'].max()
 
-        csv_data.rename(columns={'cases': 'weekly_infected', 'deaths': 'weekly_deaths'}, inplace=True)
+        csv_data.rename(columns={'cases': 'infection_per_day', 'deaths': 'death_per_day'}, inplace=True)
 
-        return csv_data
+        external_data_main['date'] = pd.to_datetime(external_data_main['date'])
+        external_data_main = external_data_main.loc[external_data_main["date"] > most_recent_date]
 
-    @classmethod
-    def _prepare_transformed_df(cls, external_data_main, external_data_vaccinations, csv_data):
-        resulted_df = cls._merge_all_dfs(external_data_main, external_data_vaccinations, csv_data)
-
-        resulted_df['start_date'] = resulted_df.apply(lambda row: (row.date - timedelta(days=6)).date(), axis=1)
-        resulted_df.rename(columns={'date': 'end_date'}, inplace=True)
-        resulted_df['end_date'] = resulted_df.apply(lambda row: row.end_date.date(), axis=1)
-
-        transformed_df = TransformingFunctions.apply_all_transforms(resulted_df)
-        transformed_df.replace({nan: None}, inplace=True)
-
-        return transformed_df
-
-    @classmethod
-    def _merge_all_dfs(cls, external_data_main, external_data_vaccinations, csv_data):
         merged_df = pd.concat([csv_data, external_data_main], ignore_index=True)
+
         merged_df['date'] = pd.to_datetime(merged_df['date'])
-        merged_df = pd.merge(merged_df, external_data_vaccinations, on='date', how='left')
+        vaccinations_data['date'] = pd.to_datetime(vaccinations_data['date'])
+
+        merged_df = pd.merge(merged_df, vaccinations_data, on='date', how='left')
         merged_df.sort_values(by='date', ascending=True, inplace=True)
+
+        return merged_df
+
+    @classmethod
+    def _apply_transforms(cls, merged_df):
+        weekly_df = cls._transform_to_weekly_format(merged_df)
+        weekly_df['weekly_second_component'] = weekly_df.apply(
+            lambda row: row.weekly_vaccinations - row.weekly_first_component, axis=1
+        )
+
+        weekly_df = GenericTransformingFunctions.apply_all_transforms(weekly_df)
+
+        return weekly_df
+
+    @classmethod
+    def _transform_to_weekly_format(cls, merged_df):
+        merged_df['date'] = pd.to_datetime(merged_df['date'])
+        merged_df = merged_df.resample('W-MON', on='date').sum()
+        merged_df.reset_index('date', inplace=True)
+
+        merged_df.rename(
+            columns={'death_per_day': 'weekly_deaths',
+                     'infection_per_day': 'weekly_infected',
+                     'recovery_per_day': 'weekly_recovered',
+                     'daily_vaccinations': 'weekly_vaccinations',
+                     'daily_people_vaccinated': 'weekly_first_component',
+                     'date': 'end_date',
+                     },
+            inplace=True)
+
+        merged_df['start_date'] = merged_df.apply(lambda row: (row.end_date - timedelta(days=6)).date(), axis=1)
+        merged_df['end_date'] = merged_df.apply(lambda row: row.end_date.date(), axis=1)
 
         return merged_df
 
@@ -121,7 +113,7 @@ class GlobalDataTransformer:
 
     def _get_dataframes(self):
         stopcorona_data = StopCoronaData.get_global_transform_data(self.latest)
-        dates = (stopcorona_data[0]['start_date'], stopcorona_data[0]['end_date']) if self.latest else None, None
+        dates = (stopcorona_data[0]['start_date'], stopcorona_data[0]['end_date']) if self.latest else (None, None)
 
         gogov_data = GogovData.get_transform_data(*dates)
 
@@ -190,8 +182,8 @@ class GlobalDataTransformer:
 
     def _transform_resulted_df(self, resulted_df):
         self._add_cumulative_stats(resulted_df)
-        resulted_df = TransformingFunctions.add_per_100000_stats(resulted_df)
-        resulted_df = TransformingFunctions.add_ratio_stats(resulted_df)
+        resulted_df = GenericTransformingFunctions.add_per_100000_stats(resulted_df)
+        resulted_df = GenericTransformingFunctions.add_ratio_stats(resulted_df)
         return resulted_df
 
     def _add_cumulative_stats(self, resulted_df):

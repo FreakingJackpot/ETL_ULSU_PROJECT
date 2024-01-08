@@ -257,4 +257,4 @@ class RegionTransformedData(models.Model):
 
 
 class Region(models.Model):
-    name = models.TextField()
+    name = models.TextField(unique=True)

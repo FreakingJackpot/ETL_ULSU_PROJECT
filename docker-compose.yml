@@ -25,7 +25,7 @@ x-airflow-config: &airflow-config
   AIRFLOW__CORE__PLUGINS_FOLDER: /plugins
   AIRFLOW__CORE__EXECUTOR: CeleryExecutor
   AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
-  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'True'
   AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql://airflow:${DB_AIRFLOW_PASS}@postgres:5432/airflow
 
   AIRFLOW__CORE__PARALLELISM: ${AIRFLOW_PARALLELISM}
@@ -118,7 +118,7 @@ services:
       dockerfile: ./app/Dockerfile
     container_name: web
     restart: always
-    command: gunicorn covid_dashboard.wsgi:application --bind 0.0.0.0:8000
+    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn covid_dashboard.wsgi:application --bind 0.0.0.0:8000"
     expose:
       - 8000
     volumes:
@@ -178,7 +178,7 @@ services:
       <<: *airflow-config
       SERVICE_NAME: worker
 
-    command: -c " sleep 10 && /entrypoint celery worker"
+    command: -c "sleep 10 && /entrypoint celery worker"
 
     depends_on:
       - airflow
@@ -282,17 +282,6 @@ services:
       - "8080:8080"
     devices:
       - "/dev/kmsg"
-
-  blackbox-exporter:
-    image: "prom/blackbox-exporter:latest"
-    container_name: blackbox-exporter
-    restart: always
-    volumes:
-      - "./prometheus/blackbox-exporter.yml:/etc/prometheus/blackbox-exporter.yml"
-    command:
-      - "--config.file=/etc/prometheus/blackbox-exporter.yml"
-    ports:
-      - 9115:9115
 
   statsd-exporter:
     image: prom/statsd-exporter

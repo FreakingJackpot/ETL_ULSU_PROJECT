@@ -66,7 +66,7 @@ load_region_data_task_template = partial(DjangoOperator, task_id='load_region_da
                                          python_callable=load_region_data)
 
 
-@dag(dag_id='regions_import', description='ETL process for legacy data', schedule_interval="@once",
+@dag(dag_id='regions_import', description='Import regions from pkl file', schedule_interval="@once",
      start_date=datetime(2023, 1, 1), max_active_runs=1, render_template_as_native_obj=True,
      on_success_callback=dag_success_alert, on_failure_callback=task_failure_alert, )
 def regions_import():
@@ -74,11 +74,11 @@ def regions_import():
         from django.core.management import call_command
         call_command('import_regions')
 
-        csv_import_task = DjangoOperator(
-            task_id='regions_import',
-            python_callable=regions_import,
-            on_execute_callback=dag_running_alert,
-        )
+    csv_import_task = DjangoOperator(
+        task_id='regions_import',
+        python_callable=regions_import,
+        on_execute_callback=dag_running_alert,
+    )
 
 
 @dag(dag_id='etl_legacy_data', description='ETL process for legacy data', schedule_interval="@once",
@@ -185,8 +185,8 @@ def import_external_data():
         call_command('import_gogov_data')
 
     def stopcorona_import(ti):
-        from django.core.management import call_command
-        value = call_command('import_stopcorona_data')
+        from apps.etl.management.commands.import_stopcorona_data import Command
+        value = Command().handle(manual=True, all=False)
         ti.xcom_push(key='is_updated', value=value)
 
     gogov_import_task = DjangoOperator(
@@ -213,7 +213,24 @@ def import_external_data():
     chain([gogov_import_task, stopcorona_import_task], check_for_stopcorona_update_task, trigger_dag_run_task)
 
 
+@dag(dag_id='stopcorona_all_import', description='Import all data from stopcorona', schedule_interval="@once",
+     start_date=datetime(2023, 1, 1), max_active_runs=1, render_template_as_native_obj=True,
+     on_success_callback=dag_success_alert, on_failure_callback=task_failure_alert, )
+def stopcorona_all_import():
+    def stopcorona_import():
+        from django.core.management import call_command
+        call_command('import_stopcorona_data', all=True)
+
+    stopcorona_import_task = DjangoOperator(
+        task_id='stopcorona_import',
+        python_callable=stopcorona_import,
+        on_execute_callback=dag_running_alert,
+    )
+
+
 etl_legacy_data()
 etl_data_full()
 etl_data_latest()
 import_external_data()
+regions_import()
+stopcorona_all_import()

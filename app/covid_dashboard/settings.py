@@ -155,6 +155,6 @@ GOGOV_URL = 'https://gogov.ru/articles/covid-v-stats'
 REGIONS_PATH = str(BASE_DIR.joinpath('apps/etl/data/regions_data.pkl'))
 
 if DEBUG:
-    import settings_dev
+    import covid_dashboard.settings_dev
 else:
-    import settings_prod
+    import covid_dashboard.settings_prod

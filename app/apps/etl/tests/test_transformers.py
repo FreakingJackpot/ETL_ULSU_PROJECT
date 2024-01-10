@@ -11,7 +11,7 @@ from apps.etl.utils.data_transformers.global_transformers import LegacyGlobalDat
 from apps.etl.utils.data_transformers.regional_transformers import LegacyRegionDataTransformer, RegionDataTransformer
 from apps.etl.models import ExternalDatabaseStatistic, ExternalDatabaseVaccination, CsvData, StopCoronaData, GogovData, \
     GlobalTransformedData, RegionTransformedData
-from apps.etl.tests.mocks import ExternalDatabaseStatisticMock, ExternalDatabaseVaccinationMock
+from apps.etl.tests.mocks import ExternalDatabaseStatisticMock, ExternalDatabaseVaccinationMock, LoggerMock
 from apps.etl.management.commands.transform_legacy_global_data import Command as TransformLegacyGlobalData
 from apps.etl.management.commands.transform_global_data import Command as TransformGlobalData
 from apps.etl.management.commands.transform_legacy_region_data import Command as TransformLegacyRegionData
@@ -685,6 +685,7 @@ class LegacyGlobalDataTransformerTestCase(TestCase):
 
         self.assertListEqual(estimated_result, result)
 
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     @mock.patch('apps.etl.models.ExternalDatabaseStatistic.get_all_transform_data',
                 ExternalDatabaseStatisticMock.get_all_transform_data)
     @mock.patch('apps.etl.models.ExternalDatabaseVaccination.get_all_transform_data',
@@ -1170,6 +1171,7 @@ class GlobalDataTransformerTestCase(TestCase):
         ]
         self.assertListEqual(estimated_data, transformed_data)
 
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_run(self):
         data = GlobalDataTransformer().run()
 
@@ -1227,6 +1229,7 @@ class GlobalDataTransformerTestCase(TestCase):
         ]
         self.assertListEqual(estimated_data, data)
 
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_run_latest(self):
         data = GlobalDataTransformer(True).run()
 
@@ -1261,6 +1264,8 @@ class GlobalDataTransformerTestCase(TestCase):
 
 
 class LegacyRegionDataTransformerTestCase(TestCase):
+
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     @mock.patch('apps.etl.models.ExternalDatabaseStatistic.get_all_transform_data',
                 ExternalDatabaseStatisticMock.get_all_transform_data)
     def test_run(self):
@@ -1564,6 +1569,7 @@ class RegionDataTransformerTestCase(TestCase):
             deaths=0,
         )
 
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_run(self):
         data = RegionDataTransformer().run()
 
@@ -1647,6 +1653,7 @@ class RegionDataTransformerTestCase(TestCase):
         ]
         self.assertListEqual(estimated_data, data)
 
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_run_latest(self):
         data = RegionDataTransformer(True).run()
 
@@ -1753,6 +1760,7 @@ class TransformLegacyGlobalDataCommandTestCase(TestCase):
                 ExternalDatabaseStatisticMock.get_all_transform_data)
     @mock.patch('apps.etl.models.ExternalDatabaseVaccination.get_all_transform_data',
                 ExternalDatabaseVaccinationMock.get_all_transform_data)
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_handle_debug(self):
         TransformLegacyGlobalData().handle(debug=True)
 
@@ -1819,6 +1827,7 @@ class TransformLegacyGlobalDataCommandTestCase(TestCase):
                 ExternalDatabaseStatisticMock.get_all_transform_data)
     @mock.patch('apps.etl.models.ExternalDatabaseVaccination.get_all_transform_data',
                 ExternalDatabaseVaccinationMock.get_all_transform_data)
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_handle(self):
         data = TransformLegacyGlobalData().handle(debug=False)
 
@@ -2003,6 +2012,7 @@ class TransformGlobalDataCommandTestCase(TestCase):
             second_component=362821,
         )
 
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_handle(self):
         data = TransformGlobalData().handle(debug=False, latest=False)
 
@@ -2060,6 +2070,7 @@ class TransformGlobalDataCommandTestCase(TestCase):
         ]
         self.assertListEqual(estimated_data, data)
 
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_handle_debug(self):
         TransformGlobalData().handle(debug=True, latest=False)
 
@@ -2125,6 +2136,7 @@ class TransformGlobalDataCommandTestCase(TestCase):
         data.sort(key=lambda x: x['start_date'])
         self.assertListEqual(estimated_data, data)
 
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_handle_latest(self):
         data = TransformGlobalData().handle(debug=False, latest=True)
 
@@ -2161,6 +2173,7 @@ class TransformGlobalDataCommandTestCase(TestCase):
 class TransformLegacyRegionDataCommandTestCase(TestCase):
     @mock.patch('apps.etl.models.ExternalDatabaseStatistic.get_all_transform_data',
                 ExternalDatabaseStatisticMock.get_all_transform_data)
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_handle(self):
         data = TransformLegacyRegionData().handle(debug=False)
         estimated_data = [
@@ -2283,6 +2296,7 @@ class TransformLegacyRegionDataCommandTestCase(TestCase):
 
     @mock.patch('apps.etl.models.ExternalDatabaseStatistic.get_all_transform_data',
                 ExternalDatabaseStatisticMock.get_all_transform_data)
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_handle_debug(self):
         TransformLegacyRegionData().handle(debug=True)
 
@@ -2588,6 +2602,7 @@ class TransformRegionDataCommandTestCase(TestCase):
             deaths=0,
         )
 
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_handle(self):
         data = TransformRegionData().handle(debug=False, latest=False)
 
@@ -2671,6 +2686,7 @@ class TransformRegionDataCommandTestCase(TestCase):
         ]
         self.assertListEqual(estimated_data, data)
 
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_handle_debug(self):
         TransformRegionData().handle(debug=True, latest=False)
 
@@ -2762,6 +2778,7 @@ class TransformRegionDataCommandTestCase(TestCase):
         data.sort(key=lambda x: (x['start_date'], x['region']))
         self.assertListEqual(estimated_data, data)
 
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_handle_latest(self):
         data = TransformRegionData().handle(debug=False, latest=True)
 

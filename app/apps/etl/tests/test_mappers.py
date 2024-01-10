@@ -1,10 +1,12 @@
 import datetime
 from copy import deepcopy
+from unittest.mock import patch
 
 from django.test import TestCase
 
 from apps.etl.models import GlobalTransformedData, RegionTransformedData
 from apps.etl.utils.mappers.transformed_data_mappers import RegionTransformedDataMapper, GlobalTransformedDataMapper
+from apps.etl.tests.mocks import LoggerMock
 
 
 class TransformedDataMapperBaseTestCase(TestCase):
@@ -145,6 +147,7 @@ class GlobalTransformedDataMapperTestCase(TestCase):
              'vaccinations_population_ratio': 0.21813685845372058, 'weekly_vaccinations_infected_ratio': 0.0},
         ]
 
+    @patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_map_on_empty_db(self):
         GlobalTransformedDataMapper().map(self.data)
 
@@ -154,6 +157,7 @@ class GlobalTransformedDataMapperTestCase(TestCase):
 
         self.assertListEqual(self.data, db_data)
 
+    @patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_map_with_updates(self):
         GlobalTransformedData.objects.create(**self.data[0])
         GlobalTransformedData.objects.create(**self.data[1])
@@ -210,6 +214,7 @@ class RegionTransformedDataMapperTestCase(TestCase):
              },
         ]
 
+    @patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_map_on_empty_db(self):
         RegionTransformedDataMapper().map(self.data)
 
@@ -219,6 +224,7 @@ class RegionTransformedDataMapperTestCase(TestCase):
 
         self.assertListEqual(self.data, db_data)
 
+    @patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_map_with_updates(self):
         RegionTransformedData.objects.create(**self.data[0])
         RegionTransformedData.objects.create(**self.data[1])

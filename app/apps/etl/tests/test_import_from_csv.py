@@ -1,11 +1,13 @@
 import csv
 import os
+from unittest import mock
 
 from django.test import TestCase
 from django.conf import settings
 
 from apps.etl.management.commands.import_covid_statistics_from_csv import Command
 from apps.etl.models import CsvData
+from apps.etl.tests.mocks import LoggerMock
 
 
 # Create your tests here.
@@ -30,6 +32,7 @@ class ImportDataTests(TestCase):
             writer.writerow({'id': 3, 'dateRep': '21/11/2023', 'cases': '250', 'deaths': '25',
                              'Cumulative_number_for_14_days_of_COVID-19_cases_per_100000': 'abc'})
 
+    @mock.patch("apps.etl.utils.logging.Logger", LoggerMock)
     def test_csv_loading(self):
         # 2. Запускаем команду обработки csv файла
         Command().handle(file_path=self._test_file_path)

@@ -258,3 +258,27 @@ class RegionTransformedData(models.Model):
 
 class Region(models.Model):
     name = models.TextField(unique=True)
+
+
+class Population(models.Model):
+    year = models.IntegerField()
+    region = models.TextField()
+    population = models.IntegerField()
+
+    class Meta:
+        unique_together = ('year', 'region',)
+
+    @classmethod
+    def get_global_population_map(cls):
+        return dict(cls.objects.filter(region=StopCoronaData.RUSSIAN_FEDERATION).values_list('year', 'population'))
+
+    @classmethod
+    def get_region_population_map(cls):
+        queryset = cls.objects.exclude(region=StopCoronaData.RUSSIAN_FEDERATION).values_list('year',
+                                                                                             'region',
+                                                                                             'population')
+        mapping = {}
+        for year, region, population in queryset:
+            mapping.setdefault(year, {})[region] = population
+
+        return mapping

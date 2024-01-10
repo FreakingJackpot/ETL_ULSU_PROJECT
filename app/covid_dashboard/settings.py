@@ -154,6 +154,9 @@ GOGOV_URL = 'https://gogov.ru/articles/covid-v-stats'
 
 REGIONS_PATH = str(BASE_DIR.joinpath('apps/etl/data/regions_data.pkl'))
 
+ROSSTAT_URL_BASE = "https://rosstat.gov.ru/{}"
+ROSSTAT_URL_POPULATION_PAGE = ROSSTAT_URL_BASE.format("compendium/document/13282")
+
 if DEBUG:
     from covid_dashboard.settings_dev import *
 else:

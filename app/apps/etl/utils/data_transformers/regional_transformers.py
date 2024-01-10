@@ -113,11 +113,11 @@ class RegionDataTransformer:
 
         return stopcorona_data
 
-    @classmethod
-    def _rename_regions(cls, stopcorona_data):
-        for mapping in cls._regions_map:
-            stopcorona_data['region'] = stopcorona_data['region'].str.replace(*mapping)
-        stopcorona_data['region'] = stopcorona_data['region'].str.replace('область', 'обл.')
+    @staticmethod
+    def rename_regions(cls, data):
+        for mapping in cls.regions_map:
+            data['region'] = data['region'].str.replace(*mapping)
+        data['region'] = data['region'].str.replace('область', 'обл.')
 
     def _add_cumulative_stats(self, stopcorona_data):
         latest_data_map = RegionTransformedData.get_highest_not_null_values(self.latest)

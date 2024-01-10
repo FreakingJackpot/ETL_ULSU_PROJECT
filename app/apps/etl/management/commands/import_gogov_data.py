@@ -1,14 +1,16 @@
+import logging
+
 from django.core.management.base import BaseCommand
 
 from apps.etl.models import GogovData
 from apps.etl.utils.parsers.gogov_parser import GogovParser
+from apps.etl.utils.logging import get_task_logger
 
 
 class Command(BaseCommand):
     help = "imports data from gogov"
 
     def handle(self, *args, **options):
-        self.stdout.write("Import from gogov")
         parsed_data = self.get_parsed_data()
         self.upload_to_db(parsed_data)
 
@@ -17,4 +19,8 @@ class Command(BaseCommand):
         return parser.get_data()
 
     def upload_to_db(self, data):
-        GogovData.objects.get_or_create(date=data.pop('date'), defaults=data)
+        obj, created = GogovData.objects.get_or_create(date=data.pop('date'), defaults=data)
+        if created:
+            logger = get_task_logger()
+            date = obj.date if isinstance(obj.date, str) else obj.date.strftime('%d-%m-%Y')
+            logger.log(logging.INFO, 'GogovData created', **data, date=date)

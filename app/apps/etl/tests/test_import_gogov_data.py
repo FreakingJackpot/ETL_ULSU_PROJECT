@@ -4,6 +4,7 @@ from django.test import TestCase
 from apps.etl.models import GogovData
 from apps.etl.management.commands.import_gogov_data import Command
 from apps.etl.utils.parsers.gogov_parser import GogovParser
+from apps.etl.tests.mocks import LoggerMock
 
 
 class TestImportGogovData(TestCase):
@@ -11,6 +12,7 @@ class TestImportGogovData(TestCase):
         self.parser = GogovParser()
         self.command = Command()
 
+    @patch("apps.etl.utils.logging.Logger", LoggerMock)
     @patch("apps.etl.utils.parsers.gogov_parser.GogovParser.get_data")
     def test_handle(self, mock_get_data):
         # Создаем тестовые данные для загрузки в базу данных

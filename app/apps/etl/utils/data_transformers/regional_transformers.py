@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 from datetime import timedelta
 
 import pandas as pd
@@ -6,6 +7,7 @@ from numpy import nan
 
 from apps.etl.models import ExternalDatabaseStatistic, StopCoronaData, RegionTransformedData
 from .transforming_functions import GenericTransformingFunctions
+from apps.etl.utils.logging import get_task_logger
 
 pd.options.mode.chained_assignment = None
 
@@ -15,7 +17,10 @@ class LegacyRegionDataTransformer:
     def run(cls):
         data_df = cls._get_dataframe()
         transformed_df = cls._apply_transforms(data_df)
-        return transformed_df.to_dict('records')
+        result = transformed_df.to_dict('records')
+
+        cls._log_result(result)
+        return result
 
     @classmethod
     def _get_dataframe(cls):
@@ -48,6 +53,16 @@ class LegacyRegionDataTransformer:
 
         return data_df
 
+    @classmethod
+    def _log_result(cls, result):
+        logger = get_task_logger()
+
+        for item in result:
+            log_data = {**item,
+                        'start_date': item['start_date'].strftime('%d-%m-%Y'),
+                        'end_date': item['end_date'].strftime('%d-%m-%Y')}
+            logger.log(logging.INFO, 'Transformed legacy region data', **log_data)
+
 
 class RegionDataTransformer:
     _regions_map = (
@@ -71,8 +86,14 @@ class RegionDataTransformer:
 
     def run(self):
         stopcorona_data = self._get_dataframe()
+        if stopcorona_data.empty:
+            return []
+
         transformed_data = self._transform_data(stopcorona_data)
-        return transformed_data.to_dict('records')
+        result = transformed_data.to_dict('records')
+
+        self._log_result(result)
+        return result
 
     def _get_dataframe(self):
         stopcorona_data = StopCoronaData.get_region_transform_data(self.latest)
@@ -120,3 +141,13 @@ class RegionDataTransformer:
                 region_data['deaths'].iloc[i] = region_data['deaths'].iloc[i - 1] + region_data['weekly_deaths'].iloc[i]
 
             stopcorona_data[stopcorona_data.region == key] = region_data
+
+    @classmethod
+    def _log_result(cls, result):
+        logger = get_task_logger()
+
+        for item in result:
+            log_data = {**item,
+                        'start_date': item['start_date'].strftime('%d-%m-%Y'),
+                        'end_date': item['end_date'].strftime('%d-%m-%Y')}
+            logger.log(logging.INFO, 'Transformed region data', **log_data)

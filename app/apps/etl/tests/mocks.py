@@ -200,3 +200,11 @@ class ExternalDatabaseVaccinationMock:
         ]
 
         return mock
+
+
+class LoggerMock():
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def log(self, *args, **kwargs):
+        pass

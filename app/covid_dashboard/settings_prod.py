@@ -1,3 +1,8 @@
+from environs import Env
+
+env = Env()
+env.read_env()
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -15,7 +20,7 @@ LOGGING = {
         'loki': {
             'level': 'INFO',
             'class': 'logging_loki.LokiHandler',
-            'url': "http://loki:3100/loki/api/v1/push",
+            'url': f"http://{env.str('LOKI_HOST', 'loki')}:3100/loki/api/v1/push",
             'tags': {"app": "web", },
             'version': "1",
             'formatter': 'standard',
@@ -27,10 +32,5 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
-        'loki': {
-            'handlers': ['loki', ],
-            'level': 'INFO',
-            'propagate': False,
-        }
     },
 }

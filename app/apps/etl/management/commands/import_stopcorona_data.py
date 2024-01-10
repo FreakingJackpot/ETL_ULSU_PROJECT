@@ -1,9 +1,12 @@
+import logging
+
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import DatabaseError
 
 from apps.etl.models import StopCoronaData
 from apps.etl.utils.parsers.stopcorona_parser import StopCoronaParser
+from apps.etl.utils.logging import get_task_logger
 
 
 class Command(BaseCommand):
@@ -16,31 +19,37 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.all = options["all"]
-        self.stdout.write("Import from stopcorona")
 
         parsed_data = self.get_parsed_data()
-        self.stdout.write(f"Parsed {len(parsed_data)} elements")
+        created_count = self.upload_to_db(parsed_data)
 
         if options['manual']:
-            return bool(self.upload_to_db(parsed_data))
+            return bool(created_count)
 
     def get_parsed_data(self):
         parser = StopCoronaParser(all=self.all)
         return parser.get_parsed_data()
 
     def upload_to_db(self, data):
+        logger = get_task_logger()
+
         uploaded = set(StopCoronaData.objects.values_list('start_date', 'end_date', 'region'))
         objects = [
             StopCoronaData(**item) for item in data if
             (item['start_date'], item['end_date'], item['region']) not in uploaded
         ]
 
-        try:
-            StopCoronaData.objects.bulk_create(objects, batch_size=500)
-        except DatabaseError as e:
-            self.stdout.writelines(("Exception occurred", str(e),))
-            return
+        StopCoronaData.objects.bulk_create(objects, batch_size=500)
 
-        self.stdout.write("Upload complete")
+        for obj in objects:
+            logger.log(logging.INFO,
+                       'StopCoronaData created',
+                       start_date=obj.start_date.strftime('%d-%m-%Y'),
+                       end_date=obj.end_date.strftime('%d-%m-%Y'),
+                       region=obj.region,
+                       hospitalized=obj.hospitalized,
+                       recovered=obj.recovered,
+                       infected=obj.infected,
+                       deaths=obj.deaths)
 
-        return len(objects)
+            return len(objects)

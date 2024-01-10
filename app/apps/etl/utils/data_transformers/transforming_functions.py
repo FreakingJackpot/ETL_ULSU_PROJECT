@@ -1,7 +1,7 @@
 import pandas as pd
 from numpy import nan
 
-RF_POPULATION = 146447424
+from apps.etl.models import Population
 
 
 class GenericTransformingFunctions:
@@ -21,15 +21,24 @@ class GenericTransformingFunctions:
             df[['first_component', 'second_component', ]].ffill(inplace=True)
 
     @staticmethod
-    def add_per_100000_stats(df):
+    def add_per_100000_stats(df, region=False):
+        mapping = Population.get_region_population_map() if region else Population.get_global_population_map()
+
         def calculate_columns(row):
+            if region:
+                year_mapping = mapping.get(row.start_date.year)
+                population = year_mapping[row.region] if year_mapping else mapping[row.start_date.year - 1][row.region]
+            else:
+                population = mapping.get(row.start_date.year)
+                population = population if population else mapping[row.start_date.year - 1]
+
             columns = {
-                'weekly_infected_per_100000': row.weekly_infected / RF_POPULATION * 100000,
-                'weekly_deaths_per_100000': row.weekly_deaths / RF_POPULATION * 100000,
-                'weekly_recovered_per_100000': row.weekly_recovered / RF_POPULATION * 100000,
-                'infected_per_100000': row.infected / RF_POPULATION * 100000,
-                'deaths_per_100000': row.deaths / RF_POPULATION * 100000,
-                'recovered_per_100000': row.recovered / RF_POPULATION * 100000,
+                'weekly_infected_per_100000': row.weekly_infected / population * 100000,
+                'weekly_deaths_per_100000': row.weekly_deaths / population * 100000,
+                'weekly_recovered_per_100000': row.weekly_recovered / population * 100000,
+                'infected_per_100000': row.infected / population * 100000,
+                'deaths_per_100000': row.deaths / population * 100000,
+                'recovered_per_100000': row.recovered / population * 100000,
             }
             return columns
 
@@ -40,6 +49,8 @@ class GenericTransformingFunctions:
 
     @classmethod
     def add_ratio_stats(cls, df, region=False):
+        mapping = Population.get_global_population_map() if not regions else {}
+
         def calculate_columns(row):
             columns = dict.fromkeys(cls._default_ratio_keys, None)
 
@@ -50,7 +61,10 @@ class GenericTransformingFunctions:
                 }
 
             if not region:
-                columns['vaccinations_population_ratio'] = row.second_component / RF_POPULATION
+                population = mapping.get(row.start_date.year)
+                population = population if population else mapping[row.start_date.year - 1]
+
+                columns['vaccinations_population_ratio'] = row.second_component / population
 
                 if row.weekly_infected:
                     columns['weekly_vaccinations_infected_ratio'] = row.weekly_vaccinations / row.weekly_infected

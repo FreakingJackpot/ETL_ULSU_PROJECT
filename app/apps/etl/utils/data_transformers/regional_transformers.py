@@ -106,7 +106,7 @@ class RegionDataTransformer:
             inplace=True)
         self._rename_regions(stopcorona_data)
         self._add_cumulative_stats(stopcorona_data)
-        stopcorona_data = GenericTransformingFunctions.add_per_100000_stats(stopcorona_data)
+        stopcorona_data = GenericTransformingFunctions.add_per_100000_stats(stopcorona_data, True)
         stopcorona_data = GenericTransformingFunctions.add_ratio_stats(stopcorona_data, True)
 
         stopcorona_data.replace({nan: None}, inplace=True)

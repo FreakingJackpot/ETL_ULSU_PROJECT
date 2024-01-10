@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 from datetime import timedelta
 
 import pandas as pd
@@ -7,6 +8,7 @@ from numpy import nan
 from apps.etl.models import ExternalDatabaseStatistic, ExternalDatabaseVaccination, CsvData, StopCoronaData, \
     GogovData, GlobalTransformedData
 from .transforming_functions import GenericTransformingFunctions
+from apps.etl.utils.logging import get_task_logger
 
 pd.options.mode.chained_assignment = None
 
@@ -19,7 +21,10 @@ class LegacyGlobalDataTransformer:
         external_data_main = cls._summarize_external_data_main(external_data_main)
         merged_df = cls._merge_all_dfs(external_data_main, vaccinations_data, csv_data)
         transformed_df = cls._apply_transforms(merged_df)
-        return transformed_df.to_dict('records')
+        result = transformed_df.to_dict('records')
+
+        cls._log_result(result)
+        return result
 
     @classmethod
     def _get_dataframes(cls):
@@ -91,6 +96,16 @@ class LegacyGlobalDataTransformer:
 
         return merged_df
 
+    @classmethod
+    def _log_result(cls, result):
+        logger = get_task_logger()
+
+        for item in result:
+            log_data = {**item,
+                        'start_date': item['start_date'].strftime('%d-%m-%Y'),
+                        'end_date': item['end_date'].strftime('%d-%m-%Y')}
+            logger.log(logging.INFO, 'Transformed legacy global data', **log_data)
+
 
 class GlobalDataTransformer:
     def __init__(self, latest=False):
@@ -100,16 +115,19 @@ class GlobalDataTransformer:
     def run(self):
         stopcorona_data, gogov_data = self._get_dataframes()
 
+        if gogov_data.empty or stopcorona_data.empty:
+            return []
+
         stopcorona_data.rename(
             columns={'infected': 'weekly_infected', 'recovered': 'weekly_recovered', 'deaths': 'weekly_deaths', },
             inplace=True)
         gogov_data = self._transform_gogov_data(gogov_data, stopcorona_data)
 
-        if gogov_data.empty or stopcorona_data.empty:
-            return []
-
         resulted_df = self._prepare_transformed_data(stopcorona_data, gogov_data)
-        return resulted_df.to_dict('records')
+        result = resulted_df.to_dict('records')
+
+        self._log_result(result)
+        return result
 
     def _get_dataframes(self):
         stopcorona_data = StopCoronaData.get_global_transform_data(self.latest)
@@ -199,3 +217,13 @@ class GlobalDataTransformer:
             resulted_df['infected'][i] = resulted_df['infected'][i - 1] + resulted_df['weekly_infected'][i]
             resulted_df['recovered'][i] = resulted_df['recovered'][i - 1] + resulted_df['weekly_recovered'][i]
             resulted_df['deaths'][i] = resulted_df['deaths'][i - 1] + resulted_df['weekly_deaths'][i]
+
+    @classmethod
+    def _log_result(cls, result):
+        logger = get_task_logger()
+
+        for item in result:
+            log_data = {**item,
+                        'start_date': item['start_date'].strftime('%d-%m-%Y'),
+                        'end_date': item['end_date'].strftime('%d-%m-%Y')}
+            logger.log(logging.INFO, 'Transformed global data', **log_data)

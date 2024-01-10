@@ -51,7 +51,7 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "editorMode": "builder",
-          "expr": "{dag_id=~\".+\"}",
+         "expr": "{dag_id=~\".+\"} |= `$filter`",
           "queryType": "range",
           "refId": "A"
         }
@@ -85,7 +85,7 @@
         {
           "datasource": "Loki",
           "editorMode": "code",
-          "expr": "{app=\"web\"}",
+          "expr": "{app=\"web\"} |= `$filter`",
           "queryType": "range",
           "refId": "Django"
         }
@@ -116,7 +116,7 @@
         {
           "datasource": "Loki",
           "editorMode": "builder",
-          "expr": "{container=~\"$containers\"}",
+          "expr": "{container=~\"$containers\"} |= `$filter`",
           "legendFormat": "",
           "queryType": "range",
           "refId": "A"
@@ -160,7 +160,7 @@
       "type": "logs"
     }
   ],
-  "refresh": "",
+  "refresh": "auto",
   "schemaVersion": 38,
   "tags": [],
   "templating": {

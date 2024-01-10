@@ -333,7 +333,6 @@ if REMOTE_LOGGING:
                 'filename_template': FILENAME_TEMPLATE
             },
         }
-
         DEFAULT_LOGGING_CONFIG['handlers'].update(LOKI_HANDLER)
     else:
         raise AirflowException(

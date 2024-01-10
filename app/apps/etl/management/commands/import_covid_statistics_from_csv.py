@@ -1,10 +1,12 @@
 import csv
+import logging
 from datetime import datetime
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from apps.etl.forms import CsvDataForm
+from apps.etl.utils.logging import get_task_logger
 
 
 class Command(BaseCommand):
@@ -24,9 +26,10 @@ class Command(BaseCommand):
     def prepare(self):
         self.imported_counter = 0
         self.skipped_counter = 0
+        self.logger = get_task_logger()
 
     def process_csv_data_to_db_model(self):
-        self.stdout.write("Import COVID")
+        self.logger.log(logging.INFO, 'Import from csv started')
 
         with open(self.file_path, mode="r") as f:
             reader = csv.DictReader(f)
@@ -37,18 +40,22 @@ class Command(BaseCommand):
                     'deaths': row_dict['deaths'],
                     'per_100000_cases_for_2_weeks': row_dict[
                         'Cumulative_number_for_14_days_of_COVID-19_cases_per_100000']
+
                 }
 
                 form = CsvDataForm(data=data)
                 if form.is_valid():
-                    form.save()
+                    obj = form.save()
+                    data['id'] = obj.id
+                    data['date'] = data['date'].strftime('%d-%m-%Y')
+                    self.logger.log(logging.INFO, 'Imported from csv', **data, model='CsvData')
                     self.imported_counter += 1
                 else:
-                    self.stderr.write(f"Errors import COVID")
-                    self.stderr.write(f"{form.errors.as_json()}\n")
+                    errors = form.errors.get_json_data()
+                    data['date'] = data['date'].strftime('%d-%m-%Y')
+                    self.logger.log(logging.WARNING, 'Errors while import', **data, errors=errors, model='CsvData')
                     self.skipped_counter += 1
 
     def summary(self):
-        self.stderr.write(f"----------------\n")
-        self.stderr.write(f"Covid imported: {self.imported_counter}\n")
-        self.stderr.write(f"Covid skipped: {self.skipped_counter}\n")
+        self.logger.log(logging.INFO, 'Imported from csv', count=self.imported_counter)
+        self.logger.log(logging.INFO, 'Skipped while csv import', count=self.skipped_counter)

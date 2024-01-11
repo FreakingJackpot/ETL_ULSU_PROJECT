@@ -8,8 +8,8 @@ INVALID = 'INVL'
 class DatasetInfo(models.Model):
     MODEL_NAME_CHOICES = (
         (INVALID, 'Invalid'),
-        ('GlobalTransformedData', 'GlobalTransformedData'),
-        ('RegionTransformedData', 'RegionTransformedData'),
+        ('GlobalTransformedData', 'Трансформированные данные по РФ'),
+        ('RegionTransformedData', 'Трансформированные данные по регионам'),
     )
     dataset_name = models.TextField(unique=True)
     description = models.JSONField()

@@ -13,6 +13,14 @@ DEBUG = env.bool("DJANGO_DEBUG")
 
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
 
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
+
+CORS_ALLOWED_ORIGINS = env.list("DJANGO_CORS_ALLOWED_ORIGINS", [])
+CORS_ALLOWED_ORIGIN_REGEXES = env.list("DJANGO_CORS_ALLOWED_ORIGIN_REGEXES", [])
+CORS_ALLOW_ALL_ORIGINS = env.bool("DJANGO_CORS_ALLOW_ALL_ORIGINS", False)
+
+CORS_URLS_REGEX = r"^/api/.*$"
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -22,17 +30,19 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'django_prometheus',
-    'apps.etl',
-    'apps.api',
     'drf_spectacular',
     'drf_spectacular_sidecar',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     "drf_standardized_errors",
+    "corsheaders",
+    'apps.etl',
+    'apps.api',
 ]
 
 MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusBeforeMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -143,8 +153,6 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'static'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
 DEFAULT_CSV_PATH = str(BASE_DIR.joinpath('apps/etl/data/data.csv'))
 STOPCORONA_URL_BASE = 'https://xn--90aivcdt6dxbc.xn--p1ai/{}'

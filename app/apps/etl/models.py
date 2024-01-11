@@ -189,6 +189,7 @@ class GlobalTransformedData(models.Model):
 
     @classmethod
     def get_highest_not_null_values(cls, latest):
+        #latest == transform mode latest
         vaccinations_queryset = cls.objects
         main_stats_queryset = cls.objects
 
@@ -241,6 +242,7 @@ class RegionTransformedData(models.Model):
 
     @classmethod
     def get_highest_not_null_values(cls, latest):
+        # latest == transform mode latest
         query = cls.objects.values('region')
 
         if latest:

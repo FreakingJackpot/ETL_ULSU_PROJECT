@@ -156,7 +156,7 @@ services:
     command: >
       -c "sleep 10 &&
            /entrypoint db init &&
-          /entrypoint connections add loki_conn --conn-uri http://${LOKI_HOST}:3100
+          /entrypoint connections add loki_conn --conn-uri http://loki:3100
           (/entrypoint webserver &) &&
           (/entrypoint celery flower &) &&
            /entrypoint scheduler"

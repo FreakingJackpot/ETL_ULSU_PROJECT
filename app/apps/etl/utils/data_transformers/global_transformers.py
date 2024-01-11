@@ -123,6 +123,9 @@ class GlobalDataTransformer:
             inplace=True)
         gogov_data = self._transform_gogov_data(gogov_data, stopcorona_data)
 
+        if gogov_data.empty:
+            return []
+
         resulted_df = self._prepare_transformed_data(stopcorona_data, gogov_data)
         result = resulted_df.to_dict('records')
 

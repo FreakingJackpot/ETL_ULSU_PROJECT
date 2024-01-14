@@ -57,6 +57,7 @@ x-airflow-config: &airflow-config
 
   TELEPUSH_TOKEN: ${TELEPUSH_TOKEN}
 
+  AIRFLOW_UID: ${AIRFLOW_UID}
 
 x-airflow-base: &airflow-base
   build:

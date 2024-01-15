@@ -49,7 +49,7 @@ class GenericTransformingFunctions:
 
     @classmethod
     def add_ratio_stats(cls, df, region=False):
-        mapping = Population.get_global_population_map() if not regions else {}
+        mapping = Population.get_global_population_map() if not region else {}
 
         def calculate_columns(row):
             columns = dict.fromkeys(cls._default_ratio_keys, None)
@@ -85,7 +85,7 @@ class GenericTransformingFunctions:
     @classmethod
     def apply_all_transforms(cls, df, region=False):
         cls.add_cumulative_stats(df, region)
-        df = cls.add_per_100000_stats(df)
+        df = cls.add_per_100000_stats(df, region)
         df = cls.add_ratio_stats(df, region)
         cls.replace_nan_with_none(df)
 

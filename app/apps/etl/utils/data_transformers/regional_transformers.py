@@ -71,11 +71,13 @@ class RegionDataTransformer:
         ('Кабардино-Балкарская Республика', 'Кабардино-Балкария'), ('Республика Хакасия', 'Хакасия'),
         ('Ямало-Ненецкий автономный округ', 'Ямало-Ненецкий АО'), ('Республика Крым', 'Крым'),
         ('Чувашская Республика', 'Чувашия'), ('Ханты-Мансийский АО', 'ХМАО – Югра'),
+        ('Ханты-Мансийский автономный округ-Югра', 'ХМАО – Югра'),
         ('Ханты-Мансийский автономный округ', 'ХМАО – Югра'), ('Ненецкий автономный округ', 'Ненецкий АО'),
         ('Чеченская Республика', 'Чечня'), ('Республика Тыва', 'Тыва'), ('Республика Калмыкия', 'Калмыкия'),
         ('Республика Саха (Якутия)', 'Саха (Якутия)'), ('Республика Мордовия', 'Мордовия'),
         ('Удмуртская Республика', 'Удмуртия'), ('Республика Башкортостан', 'Башкортостан'),
         ('Республика Татарстан', 'Татарстан'), ('Республика Северная Осетия — Алания', 'Северная Осетия'),
+        ('Республика Северная Осетия-Алания', 'Северная Осетия'),
         ('Карачаево-Черкесская Республика', 'Карачаево-Черкессия'), ('Республика Ингушетия', 'Ингушетия'),
         ('Чукотский автономный округ', 'Чукотский АО'), ('Республика Бурятия', 'Бурятия'),
         ('Республика Дагестан', 'Дагестан'), ('Республика Марий Эл', 'Марий Эл'), ('Республика Алтай', 'Алтай'),
@@ -104,7 +106,7 @@ class RegionDataTransformer:
         stopcorona_data.rename(
             columns={'infected': 'weekly_infected', 'recovered': 'weekly_recovered', 'deaths': 'weekly_deaths', },
             inplace=True)
-        self._rename_regions(stopcorona_data)
+        self.rename_regions(stopcorona_data)
         self._add_cumulative_stats(stopcorona_data)
         stopcorona_data = GenericTransformingFunctions.add_per_100000_stats(stopcorona_data, True)
         stopcorona_data = GenericTransformingFunctions.add_ratio_stats(stopcorona_data, True)
@@ -113,9 +115,9 @@ class RegionDataTransformer:
 
         return stopcorona_data
 
-    @staticmethod
+    @classmethod
     def rename_regions(cls, data):
-        for mapping in cls.regions_map:
+        for mapping in cls._regions_map:
             data['region'] = data['region'].str.replace(*mapping)
         data['region'] = data['region'].str.replace('область', 'обл.')
 

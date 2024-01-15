@@ -13,5 +13,8 @@ class PopulationTransformer:
     def run(self, data):
         df = pd.DataFrame(data)
         RegionDataTransformer.rename_regions(df)
+        df['region'] = df['region'].str.replace('г.', '')
+        df['region'] = df['region'].str.replace('Российская Федеpация', 'Российская Федерация')
+        df['region'] = df['region'].str.strip()
         resulted_df = df[df['region'].isin(self.existing_regions)]
-        return resulted_df
+        return resulted_df.to_dict('records')

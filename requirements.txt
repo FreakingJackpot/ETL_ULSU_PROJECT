@@ -46,3 +46,5 @@ gunicorn==21.2.0
 python-logging-loki
 drf-standardized-errors
 rarfile
+xlrd
+unrar

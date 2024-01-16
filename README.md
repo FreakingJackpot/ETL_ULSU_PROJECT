@@ -77,3 +77,7 @@ swagger http://0.0.0.0:1337/api/schema/swagger-ui/
 
 * [Документация](https://outstanding-baroness-6ee.notion.site/bdeb0406ef6f42748856a3a0488540b6?v=d63b4d65bcd14a92b854816e87292016)
 * [YouGile](https://ru.yougile.com/board/wanl81vnzqpg)
+
+## Nice TODO
+* Вынести etl из django в отдельный пакет или рядом с airflow
+* Доделать ветку population-data-integration, в контейнере airflow не устанавливается unrar через apt.

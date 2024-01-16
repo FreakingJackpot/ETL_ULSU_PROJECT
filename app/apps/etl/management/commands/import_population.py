@@ -5,7 +5,7 @@ from difflib import SequenceMatcher
 from django.core.management.base import BaseCommand
 
 from apps.etl.models import Population, Region
-from apps.etl.utils.parsers.rosstat_parser import RosstatParser
+from apps.etl.utils.parsers.population_parser import PopulationParser
 from apps.etl.utils.data_transformers.population_transformer import PopulationTransformer
 from apps.etl.utils.mappers.population_mapper import PopulationMapper
 
@@ -20,6 +20,6 @@ class Command(BaseCommand):
                             default=0, nargs='?')
 
     def handle(self, *args, **options):
-        data = RosstatParser(options['all']).get_parsed_data()
+        data = PopulationParser(options['all']).get_parsed_data()
         data = PopulationTransformer().run(data)
         PopulationMapper().map(data)

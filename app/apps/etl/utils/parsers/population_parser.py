@@ -21,7 +21,7 @@ _excluded_regions = (
 )
 
 
-class RosstatParser:
+class PopulationParser:
     _media_url_path = '/storage/mediabank/'
     _covid_first_year = 2019
     _rar_xls_filename_template = 'Tabl-01-{}'
@@ -98,7 +98,7 @@ class RosstatParser:
     def _log_parsed_data(self, parsed_data):
         logger = get_task_logger()
         for item in parsed_data:
-            logger.log(logging.INFO, 'Parsed from rosstat', **item, )
+            logger.log(logging.INFO, 'Parsed population from rosstat', **item, )
 
     def get_parsed_data(self):
         return self._parse_url_list(self.year_url_pairs)

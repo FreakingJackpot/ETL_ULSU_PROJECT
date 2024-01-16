@@ -4,8 +4,9 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from apps.etl.models import GlobalTransformedData, RegionTransformedData
+from apps.etl.models import GlobalTransformedData, RegionTransformedData, Population
 from apps.etl.utils.mappers.transformed_data_mappers import RegionTransformedDataMapper, GlobalTransformedDataMapper
+from apps.etl.utils.mappers.population_mapper import PopulationMapper
 from apps.etl.tests.mocks import LoggerMock
 
 
@@ -231,8 +232,6 @@ class RegionTransformedDataMapperTestCase(TestCase):
         RegionTransformedData.objects.create(**self.data[2])
         RegionTransformedData.objects.create(**self.data[3])
 
-        RegionTransformedDataMapper().map(self.data)
-
         for field in filter(lambda x: x not in ('start_date', 'end_date', 'region',), self.data[0].keys()):
             self.data[0][field] = 255
             self.data[1][field] = 366
@@ -240,6 +239,42 @@ class RegionTransformedDataMapperTestCase(TestCase):
         RegionTransformedDataMapper().map(self.data)
 
         db_data = list(RegionTransformedData.objects.values().order_by('id'))
+        for item in db_data:
+            item.pop('id')
+
+        self.assertListEqual(self.data, db_data)
+
+
+class PopulationMapperTestCase(TestCase):
+    def setUp(self):
+        self.data = [
+            {'region': 'ХМАО – Югра', 'year': 2021, "population": 1000000, },
+            {'region': 'Москва', 'year': 2021, "population": 1000000, },
+            {'region': 'Российская Федеpация', 'year': 2021, "population": 1000000, },
+        ]
+
+    @patch("apps.etl.utils.logging.Logger", LoggerMock)
+    def test_map_on_empty_db(self):
+        PopulationMapper().map(self.data)
+
+        db_data = list(Population.objects.values().order_by('id'))
+        for item in db_data:
+            item.pop('id')
+
+        self.assertListEqual(self.data, db_data)
+
+    @patch("apps.etl.utils.logging.Logger", LoggerMock)
+    def test_map_with_updates(self):
+        Population.objects.create(**self.data[0])
+        Population.objects.create(**self.data[1])
+        Population.objects.create(**self.data[2])
+
+        self.data[0]['population'] = 1230000
+        self.data[1]['population'] = 2300000
+
+        PopulationMapper().map(self.data)
+
+        db_data = list(Population.objects.values().order_by('id'))
         for item in db_data:
             item.pop('id')
 

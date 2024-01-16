@@ -9,8 +9,9 @@ from numpy import nan
 from apps.etl.utils.data_transformers.transforming_functions import GenericTransformingFunctions
 from apps.etl.utils.data_transformers.global_transformers import LegacyGlobalDataTransformer, GlobalDataTransformer
 from apps.etl.utils.data_transformers.regional_transformers import LegacyRegionDataTransformer, RegionDataTransformer
+from apps.etl.utils.data_transformers.population_transformer import PopulationTransformer
 from apps.etl.models import ExternalDatabaseStatistic, ExternalDatabaseVaccination, CsvData, StopCoronaData, GogovData, \
-    GlobalTransformedData, RegionTransformedData, Population
+    GlobalTransformedData, RegionTransformedData, Population, Region
 from apps.etl.tests.mocks import ExternalDatabaseStatisticMock, ExternalDatabaseVaccinationMock, LoggerMock
 from apps.etl.management.commands.transform_legacy_global_data import Command as TransformLegacyGlobalData
 from apps.etl.management.commands.transform_global_data import Command as TransformGlobalData
@@ -2904,3 +2905,21 @@ class TransformRegionDataCommandTestCase(TestCase):
         estimated_data.sort(key=lambda x: (x['region'], x['start_date']))
         data.sort(key=lambda x: (x['region'], x['start_date']))
         self.assertListEqual(estimated_data, data)
+
+
+class PopulationTransformerTestCase(TestCase):
+    def setUp(self):
+        Region.objects.create(name='Москва')
+        Region.objects.create(name='ХМАО – Югра')
+
+    def test_run(self):
+        data = [
+            {'region': 'Ханты-Мансийский автономный округ-Югра', 'year': 2021, "population": 1000000, },
+            {'region': 'г. Москва', 'year': 2021, "population": 1000000, },
+            {'region': 'Российская Федеpация', 'year': 2021, "population": 1000000, },
+        ]
+        data = PopulationTransformer().run(data)
+
+        estimated_data = ['ХМАО – Югра', 'Москва', 'Российская Федерация', ]
+
+        self.assertListEqual(estimated_data, [i['region'] for i in data])

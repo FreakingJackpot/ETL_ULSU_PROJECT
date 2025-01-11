@@ -10,7 +10,7 @@ from apps.etl.utils.logging import get_task_logger
 
 
 class Command(BaseCommand):
-    help = ("HELP")
+    help = ("Downloads from csv file, \n args: string optional file_path")
 
     _csv_date_format = '%d/%m/%Y'
 
